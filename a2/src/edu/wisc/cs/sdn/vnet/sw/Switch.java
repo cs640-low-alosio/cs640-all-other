@@ -64,7 +64,7 @@ public class Switch extends Device {
         System.out.println("DEBUG: flood trying: " + faceName); // debug
         if (sendPacket(etherPacket, interfaces.get(faceName))) {
           System.out.println("DEBUG: sending to ifacename: " + faceName); // debug
-          break; // break when sendPacket is true?
+//          break; // break when sendPacket is true?
         }
       }
     }
