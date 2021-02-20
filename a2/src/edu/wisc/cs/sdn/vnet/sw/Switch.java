@@ -71,6 +71,9 @@ public class Switch extends Device {
 
     /********************************************************************/
     /* TODO: Handle packets */
+    // TODO: NOT NECESSARILY THE INCOMING INTERFACE
+    // TODO: better learning piazza @155
+    // TODO: expiration @154
 
     /********************************************************************/
   }
