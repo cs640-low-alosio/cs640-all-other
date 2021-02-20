@@ -2,9 +2,7 @@ package edu.wisc.cs.sdn.vnet.sw;
 
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Set;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
@@ -48,14 +46,22 @@ public class Switch extends Device {
     SwitchEntry outEntry = null;
     if ((outEntry = switchTable.get(destMac)) != null ) {
       if (outEntry.getIface() == inIface) { // drop frame if inIface same as outIface
+        // use VNSComm.java etherAddrsMatchInterface() instead?
         return;
       } else {
         sendPacket(etherPacket, outEntry.getIface());
       }
-    } else { // flood all, except incoming interface
-      Set<String> ifaceNameSet = interfaces.keySet();
-      for (String ifaceName : ifaceNameSet) {
-        sendPacket(etherPacket, interfaces.get(ifaceName));
+    } else { // flood all
+      Set<String> faceNameSet = interfaces.keySet();
+      for (String faceName : faceNameSet) {
+        if (faceName == inIface.getName()) { // except incoming interface
+          continue;
+        }
+        if (sendPacket(etherPacket, interfaces.get(faceName))) {
+          // debug
+          System.out.println("sent to ifacename: " + faceName);
+          break; // break when sendPacket is true?
+        }
       }
     }
 
