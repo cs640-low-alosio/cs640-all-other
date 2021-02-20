@@ -1,6 +1,9 @@
 package edu.wisc.cs.sdn.vnet.sw;
 
 import net.floodlightcontroller.packet.Ethernet;
+
+import java.util.HashTable;
+
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
@@ -10,6 +13,8 @@ import edu.wisc.cs.sdn.vnet.Iface;
  */
 public class Switch extends Device
 {	
+  private HashTable<Iface, SwitchEntry> switchTable;
+  
 	/**
 	 * Creates a router for a specific host.
 	 * @param host hostname for the router
@@ -17,6 +22,7 @@ public class Switch extends Device
 	public Switch(String host, DumpFile logfile)
 	{
 		super(host,logfile);
+    this.switchTable = new HashTable<Iface, SwitchEntry>();
 	}
 
 	/**
@@ -29,6 +35,13 @@ public class Switch extends Device
 		System.out.println("*** -> Received packet: " +
 				etherPacket.toString().replace("\n", "\n\t"));
 		
+    MACAddress sourceMac = etherPacket.getSourceMAC();
+    MACAddress destMac = etherPacket.getDestinationMAC();
+    SwitchEntry inSwitchEntry = new SwitchEntry(sourceMac, inIface);  
+        
+    switchTable.insert(inIface, inSwitchEntry);
+    
+        
 		/********************************************************************/
 		/* TODO: Handle packets                                             */
 		
