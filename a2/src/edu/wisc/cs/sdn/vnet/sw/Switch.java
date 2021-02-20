@@ -45,10 +45,12 @@ public class Switch extends Device {
     
     SwitchEntry outEntry = null;
     if ((outEntry = switchTable.get(destMac)) != null ) {
+      System.out.println("DEBUG: matching switch table entry found for destMac: " + destMac); // debug
       if (outEntry.getIface() == inIface) { // drop frame if inIface same as outIface
         // use VNSComm.java etherAddrsMatchInterface() instead?
         return;
       } else {
+        System.out.println("DEBUG: sending to ifacename: " + outEntry.getIface()); // debug
         sendPacket(etherPacket, outEntry.getIface());
       }
     } else { // flood all
@@ -57,9 +59,9 @@ public class Switch extends Device {
         if (faceName == inIface.getName()) { // except incoming interface
           continue;
         }
+        System.out.println("DEBUG: flood trying: " + faceName); // debug
         if (sendPacket(etherPacket, interfaces.get(faceName))) {
-          // debug
-          System.out.println("sent to ifacename: " + faceName);
+          System.out.println("DEBUG: sending to ifacename: " + faceName); // debug
           break; // break when sendPacket is true?
         }
       }
