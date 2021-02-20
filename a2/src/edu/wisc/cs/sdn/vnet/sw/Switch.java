@@ -36,8 +36,9 @@ public class Switch extends Device {
     MACAddress sourceMac = etherPacket.getSourceMAC();
     MACAddress destMac = etherPacket.getDestinationMAC();
     // SwitchEntry inSwitchEntry = new SwitchEntry(sourceMac, inIface);
-    switchTable.put(destMac, new SwitchEntry(sourceMac, inIface)); // Reset entry whenever switch
-                                                                   // receives new packet
+    // Reset switch table entry for source MACAddr and interface
+    switchTable.put(sourceMac, new SwitchEntry(sourceMac, inIface)); 
+    
     // should we handle three cases separately?
     // interface is not in switch table
     // interface is in table and not expired,
