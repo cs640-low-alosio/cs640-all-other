@@ -45,7 +45,8 @@ public class Switch extends Device {
     
     SwitchEntry outEntry = null;
     if ((outEntry = switchTable.get(destMac)) != null ) {
-      System.out.println("DEBUG: matching switch table entry found for destMac: " + destMac); // debug
+      System.out.println("DEBUG: matching switch table entry found!"); // debug
+      System.out.println("DEBUG: dest mac: " + destMac + ", switch table entry: "+ outEntry.getIface()); // debug
       if (outEntry.getIface() == inIface) { // drop frame if inIface same as outIface
         // use VNSComm.java etherAddrsMatchInterface() instead?
         return;
