@@ -2,6 +2,7 @@ package edu.wisc.cs.sdn.vnet.sw;
 
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,7 +35,7 @@ public class Switch extends Device {
         System.out.println("DEBUG: " + counter + " seconds");
         counter++;
 
-        List<MACAddress> macAddrSet = (List<MACAddress>) switchTable.keySet();
+        List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
 //        for (MACAddress macAddress : macAddrSet) {
         for (Iterator<MACAddress> iterator = macAddrSet.iterator(); iterator.hasNext();) {
           MACAddress macAddress = iterator.next();
