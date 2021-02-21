@@ -3,6 +3,8 @@ package edu.wisc.cs.sdn.vnet.sw;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -29,11 +31,13 @@ public class Switch extends Device {
 
       @Override
       public void run() {
-        System.out.println("TimerTask executing counter is: " + counter);
-        counter++;// increments the counter
+        System.out.println("DEBUG: " + counter + " seconds");
+        counter++;
 
-        Set<MACAddress> macAddrSet = switchTable.keySet();
-        for (MACAddress macAddress : macAddrSet) {
+        List<MACAddress> macAddrSet = (List<MACAddress>) switchTable.keySet();
+//        for (MACAddress macAddress : macAddrSet) {
+        for (Iterator<MACAddress> iterator = macAddrSet.iterator(); iterator.hasNext();) {
+          MACAddress macAddress = iterator.next();
           SwitchEntry switchEntry = switchTable.get(macAddress);
           if (switchEntry.getTtl() != 0) {
             System.out.println("DEBUG: decrementing iface: " + switchEntry.getIface()
