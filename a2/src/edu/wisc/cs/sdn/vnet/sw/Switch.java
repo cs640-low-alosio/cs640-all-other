@@ -18,7 +18,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
  */
 public class Switch extends Device {
   private HashMap<MACAddress, SwitchEntry> switchTable;
-  static int counter = 0;
+//  static int counter = 0;
 
   /**
    * Creates a router for a specific host.
@@ -32,8 +32,8 @@ public class Switch extends Device {
 
       @Override
       public void run() {
-        System.out.println("DEBUG: " + counter + " seconds");
-        counter++;
+//        System.out.println("DEBUG: " + counter + " seconds");
+//        counter++;
 
         List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
 //        for (MACAddress macAddress : macAddrSet) {
@@ -41,12 +41,12 @@ public class Switch extends Device {
           MACAddress macAddress = iterator.next();
           SwitchEntry switchEntry = switchTable.get(macAddress);
           if (switchEntry.getTtl() != 0) {
-            System.out.println("DEBUG: decrementing iface: " + switchEntry.getIface()
-                + ", macAddr: " + switchEntry.getMacAddr() + ", ttl: " + switchEntry.getTtl());
+            System.out.println("DEBUG: decrementing macAddr: " + switchEntry.getMacAddr() 
+                + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
             switchEntry.decrementTtl();
           } else {
-            System.out.println("DEBUG: removing iface: " + switchEntry.getIface() + ", macAddr: "
-                + switchEntry.getMacAddr() + ", ttl: " + switchEntry.getTtl());
+            System.out.println("DEBUG: removing macAddr: " + switchEntry.getMacAddr() 
+            + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
             switchTable.remove(macAddress);
           }
         }
@@ -105,10 +105,7 @@ public class Switch extends Device {
     }
 
     /********************************************************************/
-    /* TODO: Handle packets */
-    // TODO: NOT NECESSARILY THE INCOMING INTERFACE
-    // TODO: better learning piazza @155
-    // TODO: expiration @154
+    // TODO: better learning piazza @155 / UDP packet?
 
     /********************************************************************/
   }
