@@ -86,6 +86,14 @@ public class Router extends Device {
 		/* TODO: Handle packets                                             */
 		/********************************************************************/
 		
+		if (!(etherPacket.getPayload() instanceof IPv4)) {
+		  return;
+        }
+		
+		if (etherPacket.getEtherType() != 0x0800) {
+          return;
+        }
+		
 		IPv4 ipacket = (IPv4) etherPacket.getPayload();
 		int destIp = ipacket.getDestinationAddress();
 		
