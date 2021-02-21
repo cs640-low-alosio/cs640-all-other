@@ -6,14 +6,15 @@ import edu.wisc.cs.sdn.vnet.Iface;
 public class SwitchEntry {
   private Iface iface;
   private MACAddress macAddr;
-  private long startTime;
-  // private int ttl;
-  // private static int DEFAULT_TTL=15;
+//  private long startTime;
+  private int ttl;
+  private static int DEFAULT_TTL=15;
 
   public SwitchEntry(MACAddress macAddr, Iface iface) {
     this.macAddr = macAddr;
     this.iface = iface;
-    this.startTime = System.nanoTime() / 1000000000;
+//    this.startTime = System.nanoTime() / 1000000000;
+    this.ttl = DEFAULT_TTL;
   }
 
   public MACAddress getMacAddr() {
@@ -24,11 +25,15 @@ public class SwitchEntry {
     return this.iface;
   }
 
-  public long getStartTime() {
-    return this.startTime;
+//  public long getStartTime() {
+//    return this.startTime;
+//  }
+  
+  public int getTtl() {
+    return this.ttl;
   }
 
-  // public void setTtl(int ttl) {
-  // this.ttl = ttl;
-  // }
+  public void decrementTtl() {
+    this.ttl--;
+  }
 }

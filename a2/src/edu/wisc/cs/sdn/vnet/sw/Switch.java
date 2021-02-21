@@ -31,12 +31,26 @@ public class Switch extends Device {
       public void run() {
         System.out.println("TimerTask executing counter is: " + counter);
         counter++;// increments the counter
+
+        Set<MACAddress> macAddrSet = switchTable.keySet();
+        for (MACAddress macAddress : macAddrSet) {
+          SwitchEntry switchEntry = switchTable.get(macAddress);
+          if (switchEntry.getTtl() != 0) {
+            System.out.println("DEBUG: decrementing iface: " + switchEntry.getIface()
+                + ", macAddr: " + switchEntry.getMacAddr() + ", ttl: " + switchEntry.getTtl());
+            switchEntry.decrementTtl();
+          } else {
+            System.out.println("DEBUG: removing iface: " + switchEntry.getIface() + ", macAddr: "
+                + switchEntry.getMacAddr() + ", ttl: " + switchEntry.getTtl());
+            switchTable.remove(macAddress);
+          }
+        }
       }
     };
 
     Timer timer = new Timer("MyTimer");// create a new Timer
 
-    timer.scheduleAtFixedRate(timerTask, 30, 3000);
+    timer.scheduleAtFixedRate(timerTask, 0, 1000);
   }
 
   /**
