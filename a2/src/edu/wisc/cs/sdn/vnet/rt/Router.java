@@ -96,6 +96,7 @@ public class Router extends Device {
 		
 		IPv4 ipacket = (IPv4) etherPacket.getPayload();
 		int destIp = ipacket.getDestinationAddress();
+		System.out.println("DEBUG: destIp: " + destIp);
 		
 		RouteEntry bestMatchEntry = routeTable.lookup(destIp);
 		if (bestMatchEntry == null ) { // if no entry matches, drop
@@ -103,11 +104,14 @@ public class Router extends Device {
 		}
 		
 		int gatewayIp = bestMatchEntry.getGatewayAddress();
+		System.out.println("DEBUG: gatewayIp: " + gatewayIp);
 		
 		ArpEntry outArpEntry = arpCache.lookup(gatewayIp);
 		MACAddress newDestMacAddr = outArpEntry.getMac();
+		System.out.println("DEBUG: newDestMacAddr: " + newDestMacAddr);
 		Iface outIface = bestMatchEntry.getInterface();
 		MACAddress newSourceMacAddr = outIface.getMacAddress();
+		System.out.println("DEBUG: newSourceMacAddr: " + newSourceMacAddr);
 		
 		etherPacket.setDestinationMACAddress(newDestMacAddr.toString());
 		etherPacket.setSourceMACAddress(newSourceMacAddr.toString());
