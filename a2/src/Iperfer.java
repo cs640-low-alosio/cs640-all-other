@@ -89,7 +89,7 @@ public class Iperfer {
           IPv4 badpacket = new IPv4();
           badpacket.setDestinationAddress(serverIp);
           badpacket.setChecksum((short) 123);
-          out.write(badpacket.serialize(), 0, 99999);
+          out.write(badpacket.serialize());
         }
         
         clientSocket.close();
