@@ -79,13 +79,13 @@ public class Iperfer {
     } else { // Client Mode
       int port = Integer.parseInt(args[4]);
       String serverIp = args[2];
-      String testTypeString = args[6];
+      int testType = Integer.parseInt(args[6]);
 
       try {
         Socket clientSocket = new Socket(serverIp, port);
         DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
         
-        if (testTypeString.equals("badCheck")) {
+        if (testType == 1) {
           IPv4 badpacket = new IPv4();
           badpacket.setDestinationAddress(serverIp);
           badpacket.setChecksum((short) 123);
