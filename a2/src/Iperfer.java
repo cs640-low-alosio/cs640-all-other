@@ -86,6 +86,7 @@ public class Iperfer {
         DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
         
         if (testType == 1) {
+          System.out.println("DEBUG: sending bad packet");
           IPv4 badpacket = new IPv4();
           badpacket.setDestinationAddress(serverIp);
           badpacket.setChecksum((short) 123);
