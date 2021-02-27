@@ -103,10 +103,18 @@ public class Router extends Device {
 		  return;
 		}
 		
-		int gatewayIp = bestMatchEntry.getGatewayAddress();
-		System.out.println("DEBUG: gatewayIp: " + gatewayIp);
+		int arpLookupIp = bestMatchEntry.getGatewayAddress();
+		if (arpLookupIp == 0) {
+		  arpLookupIp = destIp;
+		}
+		System.out.println("DEBUG: arpLookupIp: " + arpLookupIp);
 		
-		ArpEntry outArpEntry = arpCache.lookup(gatewayIp);
+		ArpEntry outArpEntry = arpCache.lookup(arpLookupIp);
+		if (outArpEntry == null) { // TODO: do we need this?
+		  System.out.println("DEBUG: no arp entry found");
+		  return;
+		}
+		
 		MACAddress newDestMacAddr = outArpEntry.getMac();
 		System.out.println("DEBUG: newDestMacAddr: " + newDestMacAddr);
 		Iface outIface = bestMatchEntry.getInterface();
