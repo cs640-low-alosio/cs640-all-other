@@ -85,40 +85,40 @@ public class Router extends Device {
 
     // Drop if not IPv4
     if (etherPacket.getEtherType() != 0x0800) { // TODO: are these redundant?
-      System.out.println("\tRouter.handlePacket() - not an IPv4 packet; dropping");
+      System.out.println("\t- not an IPv4 packet; dropping");
       return;
     }
 
     if (!(etherPacket.getPayload() instanceof IPv4)) { // TODO: are these redundant?
-      System.out.println("\tRouter.handlePacket() - not an IPv4 packet; dropping");
+      System.out.println("\t- not an IPv4 packet; dropping");
       return;
     }
 
     // Otherwise, handle packet
     IPv4 ipacket = (IPv4) etherPacket.getPayload();
     int destIp = ipacket.getDestinationAddress();
-    System.out.println("\tRouter.handlePacket() - destIp: " + destIp);
+    System.out.println("\t- destIp: " + destIp);
 
     // Checksum
     short expChecksum = ipacket.getChecksum();
-    System.out.println("\tRouter.handlePacket() - expChecksum: " + expChecksum);
+    System.out.println("\t- expChecksum: " + expChecksum);
     // TODO: might be inefficient and doesn't use headerLength
     ipacket.resetChecksum();
-    System.out.println("\tRouter.handlePacket() - reset checksum: " + ipacket.getChecksum());
+    System.out.println("\t- reset checksum: " + ipacket.getChecksum());
     ipacket.serialize();
     short actChecksum = ipacket.getChecksum();
-    System.out.println("\tRouter.handlePacket() - ActChecksum: " + actChecksum);
+    System.out.println("\t- ActChecksum: " + actChecksum);
     if (expChecksum != actChecksum) {
-      System.out.println("\tRouter.handlePacket() - Checksum mismatch; dropping");
+      System.out.println("\t- Checksum mismatch; dropping");
       return;
     }
 
     // TTL
     byte ttl = ipacket.getTtl();
     ttl--;
-    System.out.println("\tRouter.handlePacket() - TTL: " + ttl);
+    System.out.println("\t- TTL: " + ttl);
     if (ttl == 0) {
-      System.out.println("\tRouter.handlePacket() - TTL reached 0; dropping");
+      System.out.println("\t- TTL reached 0; dropping");
       return;
     }
     ipacket.setTtl(ttl);
@@ -130,7 +130,7 @@ public class Router extends Device {
     for (String faceName : faceSet) {
       Iface face = this.interfaces.get(faceName);
       if (destIp == face.getIpAddress()) {
-        System.out.println("\tRouter.handlePacket() - packet source same as destination; dropping");
+        System.out.println("\t- packet source same as destination; dropping");
         return;
       }
     }
@@ -138,32 +138,32 @@ public class Router extends Device {
     // Setup for sending
     RouteEntry bestRouteEntry = routeTable.lookup(destIp);
     if (bestRouteEntry == null) { // if no entry matches, drop
-      System.out.println(
-          "\tRouter.handlePacket() - no matching entry in routing table for given destination IP; dropping");
+      System.out
+          .println("\t- no matching entry in routing table for given destination IP; dropping");
       return;
     }
 
     int arpLookupIp = bestRouteEntry.getGatewayAddress();
     if (arpLookupIp == 0) {
-      System.out.println(
-          "\tRouter.handlePacket() - destination IP in current network, sending to destination IP address");
+      System.out
+          .println("\t- destination IP in current network, sending to destination IP address");
       arpLookupIp = destIp;
     }
-    System.out.println("\tRouter.handlePacket() - arpLookupIp: " + arpLookupIp);
+    System.out.println("\t- arpLookupIp: " + arpLookupIp);
 
     ArpEntry outArpEntry = arpCache.lookup(arpLookupIp);
     if (outArpEntry == null) { // TODO: do we need this?
-      System.out.println("\tRouter.handlePacket() - no arp entry found");
+      System.out.println("\t- no arp entry found");
       return;
     }
 
     MACAddress newDestMacAddr = outArpEntry.getMac();
-    System.out.println("\tRouter.handlePacket() - newDestMacAddr: " + newDestMacAddr);
+    System.out.println("\t- newDestMacAddr: " + newDestMacAddr);
 
     Iface outIface = bestRouteEntry.getInterface();
-    System.out.println("\tRouter.handlePacket() - outIface name: " + outIface.getName());
+    System.out.println("\t- outIface name: " + outIface.getName());
     MACAddress newSourceMacAddr = outIface.getMacAddress();
-    System.out.println("\tRouter.handlePacket() - newSourceMacAddr: " + newSourceMacAddr);
+    System.out.println("\t- newSourceMacAddr: " + newSourceMacAddr);
 
     etherPacket.setDestinationMACAddress(newDestMacAddr.toString());
     etherPacket.setSourceMACAddress(newSourceMacAddr.toString());

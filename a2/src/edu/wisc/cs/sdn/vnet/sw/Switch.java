@@ -39,12 +39,12 @@ public class Switch extends Device {
             MACAddress macAddress = iterator.next();
             SwitchEntry switchEntry = switchTable.get(macAddress);
             if (switchEntry.getTtl() != 0) {
-              System.out.println("\tSwitch.run() - decrementing macAddr: " + switchEntry.getMacAddr()
-                  + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
+              System.out.println("\tdecrement ttl: " + switchEntry.getMacAddr() + ", iface: "
+                  + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
               switchEntry.decrementTtl();
             } else {
-              System.out.println("\tSwitch.run() - removing macAddr: " + switchEntry.getMacAddr()
-                  + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
+              System.out.println("\texpire entry: " + switchEntry.getMacAddr() + ", iface: "
+                  + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
               switchTable.remove(macAddress);
             }
           }
