@@ -18,7 +18,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
  */
 public class Switch extends Device {
   private HashMap<MACAddress, SwitchEntry> switchTable;
-//  static int counter = 0;
+  // static int counter = 0;
 
   /**
    * Creates a router for a specific host.
@@ -32,22 +32,24 @@ public class Switch extends Device {
 
       @Override
       public void run() {
-//        System.out.println("DEBUG: " + counter + " seconds");
-//        counter++;
+        // System.out.println("DEBUG: " + counter + " seconds");
+        // counter++;
 
-        List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
-//        for (MACAddress macAddress : macAddrSet) {
-        for (Iterator<MACAddress> iterator = macAddrSet.iterator(); iterator.hasNext();) {
-          MACAddress macAddress = iterator.next();
-          SwitchEntry switchEntry = switchTable.get(macAddress);
-          if (switchEntry.getTtl() != 0) {
-            System.out.println("DEBUG: decrementing macAddr: " + switchEntry.getMacAddr() 
-                + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
-            switchEntry.decrementTtl();
-          } else {
-            System.out.println("DEBUG: removing macAddr: " + switchEntry.getMacAddr() 
-            + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
-            switchTable.remove(macAddress);
+        synchronized (switchTable) {
+          List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
+          // for (MACAddress macAddress : macAddrSet) {
+          for (Iterator<MACAddress> iterator = macAddrSet.iterator(); iterator.hasNext();) {
+            MACAddress macAddress = iterator.next();
+            SwitchEntry switchEntry = switchTable.get(macAddress);
+            if (switchEntry.getTtl() != 0) {
+              System.out.println("DEBUG: decrementing macAddr: " + switchEntry.getMacAddr()
+                  + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
+              switchEntry.decrementTtl();
+            } else {
+              System.out.println("DEBUG: removing macAddr: " + switchEntry.getMacAddr()
+                  + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
+              switchTable.remove(macAddress);
+            }
           }
         }
       }
@@ -71,7 +73,9 @@ public class Switch extends Device {
     MACAddress destMac = etherPacket.getDestinationMAC();
     // SwitchEntry inSwitchEntry = new SwitchEntry(sourceMac, inIface);
     // Reset switch table entry for source MACAddr and interface
-    switchTable.put(sourceMac, new SwitchEntry(sourceMac, inIface));
+    synchronized (switchTable) {
+      switchTable.put(sourceMac, new SwitchEntry(sourceMac, inIface));
+    }
 
     // should we handle three cases separately?
     // interface is not in switch table
