@@ -1,13 +1,10 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import java.lang.invoke.MethodHandles.Lookup;
-import java.util.List;
 import java.util.Set;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.Ethernet;
-import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
 
@@ -88,44 +85,45 @@ public class Router extends Device {
 		/********************************************************************/
 		
 		// Drop if not IPv4
+		if (etherPacket.getEtherType() != 0x0800) { // TODO: are these redundant?
+		  System.out.println("Router.handlePacket() - not an IPv4 packet; dropping");
+		  return;
+		}
+		
 		if (!(etherPacket.getPayload() instanceof IPv4)) { // TODO: are these redundant?
-		  System.out.println("DEBUG: not an IPv4 packet; dropping");
+		  System.out.println("Router.handlePacket() - not an IPv4 packet; dropping");
 		  return;
         }
 		
-		if (etherPacket.getEtherType() != 0x0800) { // TODO: are these redundant?
-		  System.out.println("DEBUG: not an IPv4 packet; dropping");
-          return;
-        }
 		
 		// Otherwise, handle packet
 		IPv4 ipacket = (IPv4) etherPacket.getPayload();
 		int destIp = ipacket.getDestinationAddress();
-		System.out.println("DEBUG: destIp: " + destIp);
+		System.out.println("Router.handlePacket() - destIp: " + destIp);
 		
 		// Checksum
 		short expChecksum = ipacket.getChecksum();
-		System.out.println("Expected checksum: " + expChecksum);
+		System.out.println("Router.handlePacket() - expChecksum: " + expChecksum);
 		// TODO: might be inefficient and doesn't use headerLength
 		ipacket.setChecksum((short) 0);
 		ipacket.serialize();
 		short actChecksum = ipacket.getChecksum();
-		System.out.println("Actual checksum: " + actChecksum);
+		System.out.println("Router.handlePacket() - ActChecksum: " + actChecksum);
 		if (expChecksum != actChecksum) {
-		  System.out.println("DEBUG: Checksum mismatch; dropping");
+		  System.out.println("Router.handlePacket() - Checksum mismatch; dropping");
 		  return;
 		}
 		
 		// TTL
-		ipacket.setChecksum((short) 0);
 		byte ttl = ipacket.getTtl();
 		ttl--;
-		System.out.println("DEBUG: TTL: " + ttl);
+		System.out.println("Router.handlePacket() - TTL: " + ttl);
 		if (ttl == 0) {
-		  System.out.println("DEBUG: TTL reached 0; dropping");
+		  System.out.println("Router.handlePacket() - TTL reached 0; dropping");
 		  return;
 		}
 		ipacket.setTtl(ttl);
+		ipacket.setChecksum((short) 0);
 		ipacket.serialize(); // recalculate checksum with new TTL
 		
 		// Make sure packet is not destined for the same router
@@ -133,7 +131,7 @@ public class Router extends Device {
 		for (String faceName : faceSet) {
 		  Iface face = this.interfaces.get(faceName);
 		  if (destIp == face.getIpAddress()) {
-		    System.out.println("DEBUG: packet source same as destination; dropping");
+		    System.out.println("Router.handlePacket() - packet source same as destination; dropping");
 		    return;
 		  }
         }
@@ -141,30 +139,30 @@ public class Router extends Device {
 		// Setup for sending
 		RouteEntry bestRouteEntry = routeTable.lookup(destIp);
 		if (bestRouteEntry == null ) { // if no entry matches, drop
-		  System.out.println("DEBUG: no matching entry in routing table for given destination IP; dropping");
+		  System.out.println("Router.handlePacket() - no matching entry in routing table for given destination IP; dropping");
 		  return;
 		}
 		
 		int arpLookupIp = bestRouteEntry.getGatewayAddress();
 		if (arpLookupIp == 0) {
-		  System.out.println("DEBUG: destination IP in current network, sending to destination IP address");
+		  System.out.println("Router.handlePacket() - destination IP in current network, sending to destination IP address");
 		  arpLookupIp = destIp;
 		}
-		System.out.println("DEBUG: arpLookupIp: " + arpLookupIp);
+		System.out.println("Router.handlePacket() - arpLookupIp: " + arpLookupIp);
 		
 		ArpEntry outArpEntry = arpCache.lookup(arpLookupIp);
 		if (outArpEntry == null) { // TODO: do we need this?
-		  System.out.println("DEBUG: no arp entry found");
+		  System.out.println("Router.handlePacket() - no arp entry found");
 		  return;
 		}
 		
 		MACAddress newDestMacAddr = outArpEntry.getMac();
-		System.out.println("DEBUG: newDestMacAddr: " + newDestMacAddr);
+		System.out.println("Router.handlePacket() - newDestMacAddr: " + newDestMacAddr);
 		
 		Iface outIface = bestRouteEntry.getInterface();
-		System.out.println("DEBUG: outIface name: " + outIface.getName());
+		System.out.println("Router.handlePacket() - outIface name: " + outIface.getName());
 		MACAddress newSourceMacAddr = outIface.getMacAddress();
-		System.out.println("DEBUG: newSourceMacAddr: " + newSourceMacAddr);
+		System.out.println("Router.handlePacket() - newSourceMacAddr: " + newSourceMacAddr);
 		
 		etherPacket.setDestinationMACAddress(newDestMacAddr.toString());
 		etherPacket.setSourceMACAddress(newSourceMacAddr.toString());
