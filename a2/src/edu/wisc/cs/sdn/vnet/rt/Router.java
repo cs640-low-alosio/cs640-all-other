@@ -117,7 +117,9 @@ public class Router extends Device {
 		
 		MACAddress newDestMacAddr = outArpEntry.getMac();
 		System.out.println("DEBUG: newDestMacAddr: " + newDestMacAddr);
+		
 		Iface outIface = bestMatchEntry.getInterface();
+		System.out.println("DEBUG: outIface name: " + outIface.getName());
 		MACAddress newSourceMacAddr = outIface.getMacAddress();
 		System.out.println("DEBUG: newSourceMacAddr: " + newSourceMacAddr);
 		
