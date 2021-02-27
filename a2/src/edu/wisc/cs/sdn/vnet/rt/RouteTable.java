@@ -60,6 +60,7 @@ public class RouteTable {
       if (maxLengthMatchIndex != -1) {
         return entries.get(maxLengthMatchIndex);
       }
+      System.out.println("DEBUG: RouteEntry.lookup() - no matching entries found");
       return null; // Return null if no matching entries found
     }
   }
