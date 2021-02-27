@@ -95,7 +95,6 @@ public class Router extends Device {
 		  return;
         }
 		
-		
 		// Otherwise, handle packet
 		IPv4 ipacket = (IPv4) etherPacket.getPayload();
 		int destIp = ipacket.getDestinationAddress();
@@ -105,7 +104,8 @@ public class Router extends Device {
 		short expChecksum = ipacket.getChecksum();
 		System.out.println("Router.handlePacket() - expChecksum: " + expChecksum);
 		// TODO: might be inefficient and doesn't use headerLength
-		ipacket.setChecksum((short) 0);
+		ipacket.resetChecksum();
+		System.out.println("Router.handlePacket() - reset checksum: " + ipacket.getChecksum());
 		ipacket.serialize();
 		short actChecksum = ipacket.getChecksum();
 		System.out.println("Router.handlePacket() - ActChecksum: " + actChecksum);
@@ -168,7 +168,6 @@ public class Router extends Device {
 		etherPacket.setSourceMACAddress(newSourceMacAddr.toString());
 		
 		sendPacket(etherPacket, outIface);
-
 	}
 	
 //	public static short calculateChecksum(IPv4 ipacket, short headerLength) {
