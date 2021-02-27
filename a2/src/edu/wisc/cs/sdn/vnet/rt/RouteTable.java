@@ -37,12 +37,12 @@ public class RouteTable {
   public RouteEntry lookup(int ip) {
     synchronized (this.entries) {
       /*****************************************************************/
-      /* TODO: Find the route entry with the longest prefix match */
+      /* Find the route entry with the longest prefix match */
       /*****************************************************************/
-      
+
       int maxLengthMatch = 0;
       int maxLengthMatchIndex = -1;
-      
+
       for (int i = 0; i < entries.size(); i++) {
         int potentialMatchAddr = entries.get(i).getDestinationAddress();
         int subnetMask = entries.get(i).getMaskAddress();
@@ -56,12 +56,11 @@ public class RouteTable {
           }
         }
       }
-      
+
       if (maxLengthMatchIndex != -1) {
         return entries.get(maxLengthMatchIndex);
-      } else {
-        return null;
       }
+      return null; // Return null if no matching entries found
     }
   }
 
