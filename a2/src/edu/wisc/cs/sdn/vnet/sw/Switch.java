@@ -18,7 +18,6 @@ import edu.wisc.cs.sdn.vnet.Iface;
  */
 public class Switch extends Device {
   private HashMap<MACAddress, SwitchEntry> switchTable;
-//  static int counter = 0;
 
   /**
    * Creates a router for a specific host.
@@ -32,22 +31,24 @@ public class Switch extends Device {
 
       @Override
       public void run() {
-//        System.out.println("DEBUG: " + counter + " seconds");
-//        counter++;
-
-        List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
-//        for (MACAddress macAddress : macAddrSet) {
-        for (Iterator<MACAddress> iterator = macAddrSet.iterator(); iterator.hasNext();) {
-          MACAddress macAddress = iterator.next();
-          SwitchEntry switchEntry = switchTable.get(macAddress);
-          if (switchEntry.getTtl() != 0) {
-            System.out.println("DEBUG: decrementing macAddr: " + switchEntry.getMacAddr() 
-                + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
-            switchEntry.decrementTtl();
-          } else {
-            System.out.println("DEBUG: removing macAddr: " + switchEntry.getMacAddr() 
-            + ", iface: " + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
-            switchTable.remove(macAddress);
+        // if (!switchTable.isEmpty()) {
+        // System.out.println("*** -> Switch.run()");
+        // }
+        synchronized (switchTable) {
+          List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
+          // for (MACAddress macAddress : macAddrSet) {
+          for (Iterator<MACAddress> iterator = macAddrSet.iterator(); iterator.hasNext();) {
+            MACAddress macAddress = iterator.next();
+            SwitchEntry switchEntry = switchTable.get(macAddress);
+            if (switchEntry.getTtl() != 0) {
+              // System.out.println("\tdecrement ttl: " + switchEntry.getMacAddr() + ", iface: "
+              // + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
+              switchEntry.decrementTtl();
+            } else {
+              // System.out.println("\texpire entry: " + switchEntry.getMacAddr() + ", iface: "
+              // + switchEntry.getIface() + ", ttl: " + switchEntry.getTtl());
+              switchTable.remove(macAddress);
+            }
           }
         }
       }
@@ -71,42 +72,31 @@ public class Switch extends Device {
     MACAddress destMac = etherPacket.getDestinationMAC();
     // SwitchEntry inSwitchEntry = new SwitchEntry(sourceMac, inIface);
     // Reset switch table entry for source MACAddr and interface
-    switchTable.put(sourceMac, new SwitchEntry(sourceMac, inIface));
-
-    // should we handle three cases separately?
-    // interface is not in switch table
-    // interface is in table and not expired,
-    // interface is in table and expired (basically same as first case)
+    synchronized (switchTable) {
+      switchTable.put(sourceMac, new SwitchEntry(sourceMac, inIface));
+    }
 
     SwitchEntry outEntry = null;
-    if ((outEntry = switchTable.get(destMac)) != null) {
-      System.out.println("DEBUG: matching switch table entry found!"); // debug
-      System.out
-          .println("DEBUG: dest mac: " + destMac + ", switch table entry: " + outEntry.getIface()); // debug
-      if (outEntry.getIface() == inIface) { // drop frame if inIface same as outIface
-        // use VNSComm.java etherAddrsMatchInterface() instead?
+    if ((outEntry = switchTable.get(destMac)) != null) { // Switch table has matching entry
+      // System.out.println("\t- matching switch table entry found!");
+      // System.out.println("\t- dest mac: " + destMac + ", out iface: " + outEntry.getIface());
+      if (outEntry.getIface() == inIface) { // Drop frame if inIface same as outIface
         return;
       } else {
-        System.out.println("DEBUG: sending to ifacename: " + outEntry.getIface()); // debug
+        // System.out.println("\t- sending to ifacename: " + outEntry.getIface());
         sendPacket(etherPacket, outEntry.getIface());
       }
-    } else { // flood all
+    } else { // Flood all
       Set<String> faceNameSet = interfaces.keySet();
       for (String faceName : faceNameSet) {
         if (faceName == inIface.getName()) { // except incoming interface
           continue;
         }
-        System.out.println("DEBUG: flood trying: " + faceName); // debug
+        // System.out.println("\t- flood trying: " + faceName);
         if (sendPacket(etherPacket, interfaces.get(faceName))) {
-          System.out.println("DEBUG: sending to ifacename: " + faceName); // debug
-          // break; // break when sendPacket is true?
+          // System.out.println("\t- sending to ifacename: " + faceName);
         }
       }
     }
-
-    /********************************************************************/
-    // TODO: better learning piazza @155 / UDP packet?
-
-    /********************************************************************/
   }
 }
