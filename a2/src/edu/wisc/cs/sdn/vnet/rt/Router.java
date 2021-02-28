@@ -95,13 +95,13 @@ public class Router extends Device {
       System.out.println("\t- not an IPv4 packet; dropping");
       return;
     }
-    
+
     /********************************************************************/
     // Is IPv4, handle packet
     /********************************************************************/
     IPv4 ipacket = (IPv4) etherPacket.getPayload();
     int destIp = ipacket.getDestinationAddress();
-    System.out.println("\t- destIp: " + destIp);
+    // System.out.println("\t- destIp: " + destIp);
 
     // Validate checksum
     short expChecksum = ipacket.getChecksum();
@@ -115,7 +115,7 @@ public class Router extends Device {
       System.out.println("\t- Checksum mismatch; dropping");
       return;
     }
-    
+
     /********************************************************************/
     // Handle TTL
     /********************************************************************/
@@ -130,7 +130,7 @@ public class Router extends Device {
     ipacket.setChecksum((short) 0);
     ipacket.serialize(); // recalculate checksum with new TTL
     // System.out.println("\t- calc new checksum: " + ipacket.getChecksum());
-    
+
     /********************************************************************/
     // Make sure packet is not destined for the same router
     /********************************************************************/
@@ -142,7 +142,7 @@ public class Router extends Device {
         return;
       }
     }
-    
+
     /********************************************************************/
     // Setup for sending
     // Determine gateway or destination IP addr
@@ -154,11 +154,11 @@ public class Router extends Device {
     }
     int arpLookupIp = bestRouteEntry.getGatewayAddress();
     if (arpLookupIp == 0) {
-      System.out.println("\t- destination IP in current network, sending to dest IP address");
+      // System.out.println("\t- destination IP in current network, sending to dest IP address");
       arpLookupIp = destIp;
     }
     // System.out.println("\t- arpLookupIp: " + arpLookupIp);
-    
+
     /********************************************************************/
     // Determine new outgoing iface, new dest MAC addr, and new source MAC addr
     /********************************************************************/
@@ -172,14 +172,14 @@ public class Router extends Device {
       System.out.println("\t- couldn't find new dest MAC addr in arp table; dropping");
       return;
     }
-    System.out.println("\t- newDestMacAddr: " + newDestMacAddr);
+    // System.out.println("\t- newDestMacAddr: " + newDestMacAddr);
 
     Iface outIface = bestRouteEntry.getInterface();
     if (outIface == null) {
       System.out.println("\t- couldn't find outgoing interface in route table entry; dropping");
       return;
     }
-    System.out.println("\t- outIface name: " + outIface.getName());
+    // System.out.println("\t- outIface name: " + outIface.getName());
 
     MACAddress newSourceMacAddr = outIface.getMacAddress();
     if (newSourceMacAddr == null) {
