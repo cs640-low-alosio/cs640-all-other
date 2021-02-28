@@ -124,6 +124,7 @@ public class Router extends Device {
     ipacket.setTtl(ttl);
     ipacket.setChecksum((short) 0);
     ipacket.serialize(); // recalculate checksum with new TTL
+    System.out.println("\t- calc new checksum: " + ipacket.getChecksum());
 
     // Make sure packet is not destined for the same router
     Set<String> faceSet = this.interfaces.keySet();
