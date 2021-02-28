@@ -83,40 +83,45 @@ public class Router extends Device {
     /* Handle packets */
     /********************************************************************/
 
+    /********************************************************************/
     // Drop if not IPv4
-    if (etherPacket.getEtherType() != 0x0800) { // TODO: are these redundant?
+    /********************************************************************/
+    if (etherPacket.getEtherType() != 0x0800) {
       System.out.println("\t- not an IPv4 packet; dropping");
       return;
     }
 
-    if (!(etherPacket.getPayload() instanceof IPv4)) { // TODO: are these redundant?
+    if (!(etherPacket.getPayload() instanceof IPv4)) {
       System.out.println("\t- not an IPv4 packet; dropping");
       return;
     }
-
+    
+    /********************************************************************/
     // Is IPv4, handle packet
+    /********************************************************************/
     IPv4 ipacket = (IPv4) etherPacket.getPayload();
     int destIp = ipacket.getDestinationAddress();
     System.out.println("\t- destIp: " + destIp);
 
-    // Checksum
+    // Validate checksum
     short expChecksum = ipacket.getChecksum();
-    System.out.println("\t- expChecksum: " + expChecksum);
-    // TODO: do we have to use headerLength?
+    // System.out.println("\t- expChecksum: " + expChecksum);
     ipacket.resetChecksum();
-    System.out.println("\t- reset checksum: " + ipacket.getChecksum());
+    // System.out.println("\t- reset checksum: " + ipacket.getChecksum());
     ipacket.serialize();
     short actChecksum = ipacket.getChecksum();
-    System.out.println("\t- ActChecksum: " + actChecksum);
+    // System.out.println("\t- ActChecksum: " + actChecksum);
     if (expChecksum != actChecksum) {
       System.out.println("\t- Checksum mismatch; dropping");
       return;
     }
-
-    // TTL
+    
+    /********************************************************************/
+    // Handle TTL
+    /********************************************************************/
     byte ttl = ipacket.getTtl();
     ttl--;
-    System.out.println("\t- TTL: " + ttl);
+    // System.out.println("\t- TTL: " + ttl);
     if (ttl == 0) {
       System.out.println("\t- TTL reached 0; dropping");
       return;
@@ -124,85 +129,67 @@ public class Router extends Device {
     ipacket.setTtl(ttl);
     ipacket.setChecksum((short) 0);
     ipacket.serialize(); // recalculate checksum with new TTL
-    System.out.println("\t- calc new checksum: " + ipacket.getChecksum());
-
+    // System.out.println("\t- calc new checksum: " + ipacket.getChecksum());
+    
+    /********************************************************************/
     // Make sure packet is not destined for the same router
+    /********************************************************************/
     Set<String> faceSet = this.interfaces.keySet();
     for (String faceName : faceSet) {
       Iface face = this.interfaces.get(faceName);
       if (destIp == face.getIpAddress()) {
-        System.out.println("\t- packet source same as destination; dropping");
+        System.out.println("\t- packet source same as dest; dropping");
         return;
       }
     }
-
+    
+    /********************************************************************/
     // Setup for sending
+    // Determine gateway or destination IP addr
+    /********************************************************************/
     RouteEntry bestRouteEntry = routeTable.lookup(destIp);
     if (bestRouteEntry == null) { // if no entry matches, drop
-      System.out
-          .println("\t- no matching entry in routing table for given destination IP; dropping");
+      System.out.println("\t- no matching entry in routing table for given dest IP; dropping");
       return;
     }
-
     int arpLookupIp = bestRouteEntry.getGatewayAddress();
     if (arpLookupIp == 0) {
-      System.out
-          .println("\t- destination IP in current network, sending to destination IP address");
+      System.out.println("\t- destination IP in current network, sending to dest IP address");
       arpLookupIp = destIp;
     }
-    System.out.println("\t- arpLookupIp: " + arpLookupIp);
-
+    // System.out.println("\t- arpLookupIp: " + arpLookupIp);
+    
+    /********************************************************************/
+    // Determine new outgoing iface, new dest MAC addr, and new source MAC addr
+    /********************************************************************/
     ArpEntry outArpEntry = arpCache.lookup(arpLookupIp);
-    if (outArpEntry == null) { // TODO: do we need this?
-      System.out.println("\t- no arp entry found");
+    if (outArpEntry == null) {
+      System.out.println("\t- couldn't find arp entry for given IP; dropping");
       return;
     }
-
     MACAddress newDestMacAddr = outArpEntry.getMac();
+    if (newDestMacAddr == null) {
+      System.out.println("\t- couldn't find new dest MAC addr in arp table; dropping");
+      return;
+    }
     System.out.println("\t- newDestMacAddr: " + newDestMacAddr);
 
     Iface outIface = bestRouteEntry.getInterface();
+    if (outIface == null) {
+      System.out.println("\t- couldn't find outgoing interface in route table entry; dropping");
+      return;
+    }
     System.out.println("\t- outIface name: " + outIface.getName());
+
     MACAddress newSourceMacAddr = outIface.getMacAddress();
-    System.out.println("\t- newSourceMacAddr: " + newSourceMacAddr);
+    if (newSourceMacAddr == null) {
+      System.out.println("\t- couldn't find source MAC addr for given interface; dropping");
+      return;
+    }
+    // System.out.println("\t- newSourceMacAddr: " + newSourceMacAddr);
 
     etherPacket.setDestinationMACAddress(newDestMacAddr.toString());
     etherPacket.setSourceMACAddress(newSourceMacAddr.toString());
-
     sendPacket(etherPacket, outIface);
   }
-
-  // public static short calculateChecksum(IPv4 ipacket, short headerLength) {
-  //
-  // bb.put((byte) (((ipacket.version & 0xf) << 4) | (ipacket.headerLength & 0xf)));
-  // bb.put(ipacket.diffServ);
-  // bb.putShort(ipacket.totalLength);
-  // bb.putShort(ipacket.identification);
-  // bb.putShort((short) (((ipacket.flags & 0x7) << 13) | (ipacket.fragmentOffset & 0x1fff)));
-  // bb.put(ipacket.ttl);
-  // bb.put(ipacket.protocol);
-  // bb.putShort(ipacket.checksum);
-  // bb.putInt(ipacket.sourceAddress);
-  // bb.putInt(ipacket.destinationAddress);
-  // if (ipacket.options != null)
-  // bb.put(ipacket.options);
-  //// if (payloadData != null)
-  //// bb.put(payloadData);
-  //
-  // // compute checksum if needed
-  // if (this.checksum == 0) {
-  // bb.rewind();
-  // int accumulation = 0;
-  // for (int i = 0; i < this.headerLength * 2; ++i) {
-  // accumulation += 0xffff & bb.getShort();
-  // }
-  // accumulation = ((accumulation >> 16) & 0xffff)
-  // + (accumulation & 0xffff);
-  // this.checksum = (short) (~accumulation & 0xffff);
-  // bb.putShort(10, this.checksum);
-  // }
-  // return data;
-  // return 0;
-  //
-  // }
 }
