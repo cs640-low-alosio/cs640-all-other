@@ -80,7 +80,7 @@ public class Router extends Device {
     System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
 
     /********************************************************************/
-    /* TODO: Handle packets */
+    /* Handle packets */
     /********************************************************************/
 
     // Drop if not IPv4
@@ -94,7 +94,7 @@ public class Router extends Device {
       return;
     }
 
-    // Otherwise, handle packet
+    // Is IPv4, handle packet
     IPv4 ipacket = (IPv4) etherPacket.getPayload();
     int destIp = ipacket.getDestinationAddress();
     System.out.println("\t- destIp: " + destIp);
@@ -102,7 +102,7 @@ public class Router extends Device {
     // Checksum
     short expChecksum = ipacket.getChecksum();
     System.out.println("\t- expChecksum: " + expChecksum);
-    // TODO: might be inefficient and doesn't use headerLength
+    // TODO: do we have to use headerLength?
     ipacket.resetChecksum();
     System.out.println("\t- reset checksum: " + ipacket.getChecksum());
     ipacket.serialize();

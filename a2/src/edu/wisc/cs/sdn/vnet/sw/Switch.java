@@ -31,7 +31,9 @@ public class Switch extends Device {
 
       @Override
       public void run() {
-        System.out.println("*** -> Switch.run()");
+        if (!switchTable.isEmpty()) {
+          System.out.println("*** -> Switch.run()");
+        }
         synchronized (switchTable) {
           List<MACAddress> macAddrSet = new ArrayList<>(switchTable.keySet());
           // for (MACAddress macAddress : macAddrSet) {
