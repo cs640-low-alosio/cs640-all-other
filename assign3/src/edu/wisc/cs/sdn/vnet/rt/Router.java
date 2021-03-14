@@ -87,9 +87,9 @@ public class Router extends Device {
     // Send out on each of this router's interfaces
     for (Iface iface : this.interfaces.values()) {
       IPv4 initRequestIPv4 = new IPv4();
-      initRequestIPv4.setPayload(initRequestUdp);
-      initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
-      initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+//      initRequestIPv4.setPayload(initRequestUdp);
+//      initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
+//      initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
       Ethernet initRequestEthernet = new Ethernet();
       initRequestEthernet.setPayload(initRequestIPv4);
       initRequestEthernet.setDestinationMACAddress(BROADCAST_MAC);
