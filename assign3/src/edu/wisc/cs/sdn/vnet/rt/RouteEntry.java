@@ -99,9 +99,9 @@ public class RouteEntry {
   }
 
   public String toString() {
-    return String.format("%s \t%s \t%s \t%s", IPv4.fromIPv4Address(this.destinationAddress),
+    return String.format("%s \t%s \t%s \t%s \t%i", IPv4.fromIPv4Address(this.destinationAddress),
         IPv4.fromIPv4Address(this.gatewayAddress), IPv4.fromIPv4Address(this.maskAddress),
-        this.iface.getName());
+        this.iface.getName(), this.ttl);
   }
 
   public int getTtl() {
