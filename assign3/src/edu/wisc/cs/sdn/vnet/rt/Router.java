@@ -110,10 +110,8 @@ public class Router extends Device implements Runnable {
       initRequestEthernet.setEtherType(TYPE_IPv4);
       
       sendPacket(initRequestEthernet, iface);
-      System.out.println("-------------------------------------------------");
-      System.out.println("Initial packet sent over iface: " + iface.getName());
-      System.out.println("-------------------------------------------------");
-      System.out.println(initRequestEthernet);
+      System.out.println("*** -> Initial packet sent over iface: " + iface.getName());
+      System.out.println(initRequestEthernet.toString().replace("\n", "\n\t"));
       
     }
     
