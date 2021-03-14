@@ -86,16 +86,19 @@ public class Router extends Device implements Runnable {
     // Initial RIPv2 request
     RIPv2 initRequestRip = new RIPv2();
     initRequestRip.setCommand(COMMAND_REQUEST);
+    initRequestRip.serialize();
     UDP initRequestUdp = new UDP();
     initRequestUdp.setPayload(initRequestRip);
     initRequestUdp.setSourcePort(RIP_PORT);
     initRequestUdp.setDestinationPort(RIP_PORT);
+    initRequestUdp.serialize();
     // Send out on each of this router's interfaces
     for (Iface iface : this.interfaces.values()) {
       IPv4 initRequestIPv4 = new IPv4();
       initRequestIPv4.setPayload(initRequestUdp);
       initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
       initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+      initRequestIPv4.serialize();
       Ethernet initRequestEthernet = new Ethernet();
       initRequestEthernet.setPayload(initRequestIPv4);
       initRequestEthernet.setDestinationMACAddress(BROADCAST_MAC);
@@ -108,6 +111,10 @@ public class Router extends Device implements Runnable {
     responseThread.start();
   }
   
+  /**
+   * Send unsolicited response every thirty seconds
+   * 
+   */
   public void run()
   {
       while (true)
