@@ -20,6 +20,7 @@ public class Router extends Device implements Runnable {
   public static String MULTICAST_RIP = "224.0.0.9";
   public static String BROADCAST_MAC = "FF:FF:FF:FF:FF:FF";
   public static final short TYPE_IPv4 = 0x0800;
+  public static final byte PROTOCOL_UDP = 0x11;
   public static int UNSOLICITED_RESPONSE_INTERVAL = 10000;
   
   private Thread responseThread;
@@ -100,6 +101,7 @@ public class Router extends Device implements Runnable {
       initRequestIPv4.setPayload(initRequestUdp);
       initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
       initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+      initRequestIPv4.setProtocol(PROTOCOL_UDP);
       initRequestIPv4.serialize();
       Ethernet initRequestEthernet = new Ethernet();
       initRequestEthernet.setPayload(initRequestIPv4);
