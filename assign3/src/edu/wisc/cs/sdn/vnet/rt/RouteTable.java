@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import net.floodlightcontroller.packet.IPv4;
 
 import edu.wisc.cs.sdn.vnet.Iface;
@@ -155,16 +154,34 @@ public class RouteTable
 	 * @param maskIp subnet mask
 	 * @param iface router interface out which to send packets to reach the 
 	 *        destination or gateway
+	 * @param time to live
 	 */
-	public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
+	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int ttl)
 	{
-		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
+		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, ttl);
 		synchronized(this.entries)
 		{ 
 			this.entries.add(entry);
 		}
 	}
 
+	   /**
+     * Add an entry to the route table.
+     * @param dstIp destination IP
+     * @param gwIp gateway IP
+     * @param maskIp subnet mask
+     * @param iface router interface out which to send packets to reach the 
+     *        destination or gateway
+     */
+    public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
+    {
+        RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
+        synchronized(this.entries)
+        { 
+            this.entries.add(entry);
+        }
+    }
+    
 	/**
 	 * Remove an entry from the route table.
 	 * @param dstIP destination IP of the entry to remove
@@ -190,7 +207,7 @@ public class RouteTable
 	 * @param iface new router interface for matching entry
 	 * @return true if a matching entry was found and updated, otherwise false
 	 */
-	public boolean update(int dstIp, int maskIp, int gwIp, Iface iface)
+	public boolean update(int dstIp, int maskIp, int gwIp, Iface iface, int ttl)
 	{
 		synchronized(this.entries)
 		{
@@ -198,6 +215,7 @@ public class RouteTable
 			if (null == entry) { return false; }
 			entry.setGatewayAddress(gwIp);
 			entry.setInterface(iface);
+			entry.setTtl(ttl);
 		}
 		return true;
 	}

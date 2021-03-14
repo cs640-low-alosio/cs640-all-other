@@ -22,6 +22,8 @@ public class RouteEntry
 	 * the destination or gateway */
 	private Iface iface;
 	
+	private int ttl;
+	
 	/**
 	 * Create a new route table entry.
 	 * @param destinationAddress destination IP address
@@ -29,15 +31,35 @@ public class RouteEntry
 	 * @param maskAddress subnet mask
 	 * @param iface the router interface out which packets should 
 	 *        be sent to reach the destination or gateway
+	 * @param time to live
 	 */
 	public RouteEntry(int destinationAddress, int gatewayAddress, 
-			int maskAddress, Iface iface)
+			int maskAddress, Iface iface, int ttl)
 	{
 		this.destinationAddress = destinationAddress;
 		this.gatewayAddress = gatewayAddress;
 		this.maskAddress = maskAddress;
 		this.iface = iface;
+		this.ttl = ttl;
 	}
+	
+	   /**
+     * Create a new route table entry.
+     * @param destinationAddress destination IP address
+     * @param gatewayAddress gateway IP address
+     * @param maskAddress subnet mask
+     * @param iface the router interface out which packets should 
+     *        be sent to reach the destination or gateway
+     */
+    public RouteEntry(int destinationAddress, int gatewayAddress, 
+            int maskAddress, Iface iface)
+    {
+        this.destinationAddress = destinationAddress;
+        this.gatewayAddress = gatewayAddress;
+        this.maskAddress = maskAddress;
+        this.iface = iface;
+        this.ttl = -1;
+    }
 	
 	/**
 	 * @return destination IP address
@@ -77,5 +99,13 @@ public class RouteEntry
 				IPv4.fromIPv4Address(this.gatewayAddress),
 				IPv4.fromIPv4Address(this.maskAddress),
 				this.iface.getName());
+	}
+	
+	public int getTtl() {
+	  return this.ttl;
+	}
+	
+	public void setTtl(int ttl) {
+	  this.ttl = ttl;
 	}
 }

@@ -53,6 +53,26 @@ public class Router extends Device
 		System.out.print(this.routeTable.toString());
 		System.out.println("-------------------------------------------------");
 	}
+	
+	/**
+	 * 
+	 */
+	public void runRip() {
+	  // Connect to directly reachable subnets - don't expire
+	  for (Iface iface : this.interfaces.values())
+      {
+	    int ifaceIp = iface.getIpAddress();
+        int ifaceMask = iface.getSubnetMask();
+        
+        int destIp = ifaceIp & ifaceMask;
+        
+        routeTable.insert(destIp, 0, ifaceMask, iface);
+      }
+	  
+	  // 
+
+	  
+	}
 
 	/**
 	 * Load a new ARP cache from a file.
