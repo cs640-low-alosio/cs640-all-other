@@ -1,9 +1,10 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
+import java.util.Iterator;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-
+import edu.wisc.cs.sdn.vnet.sw.MACTableEntry;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.RIPv2;
@@ -12,12 +13,15 @@ import net.floodlightcontroller.packet.UDP;
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
-public class Router extends Device {
+public class Router extends Device implements Runnable {
   public static final byte COMMAND_REQUEST = 1;
   public static final byte COMMAND_RESPONSE = 2;
   public static short RIP_PORT = (short)520;
   public static String MULTICAST_RIP = "224.0.0.9";
   public static String BROADCAST_MAC = "FF:FF:FF:FF:FF:FF";
+  public static int UNSOLICITED_RESPONSE_INTERVAL = 10000;
+  
+  private Thread responseThread;
   
   /** Routing table for the router */
   private RouteTable routeTable;
@@ -87,9 +91,9 @@ public class Router extends Device {
     // Send out on each of this router's interfaces
     for (Iface iface : this.interfaces.values()) {
       IPv4 initRequestIPv4 = new IPv4();
-//      initRequestIPv4.setPayload(initRequestUdp);
-//      initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
-//      initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+      initRequestIPv4.setPayload(initRequestUdp);
+      initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
+      initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
       Ethernet initRequestEthernet = new Ethernet();
       initRequestEthernet.setPayload(initRequestIPv4);
       initRequestEthernet.setDestinationMACAddress(BROADCAST_MAC);
@@ -97,6 +101,26 @@ public class Router extends Device {
       
       sendPacket(initRequestEthernet, iface);
     }
+    
+    this.responseThread = new Thread(this);
+    responseThread.start();
+  }
+  
+  public void run()
+  {
+      while (true)
+      {
+          // Run every 10 seconds
+          try 
+          { Thread.sleep(UNSOLICITED_RESPONSE_INTERVAL); }
+          catch (InterruptedException e) 
+          { break; }
+          
+          // Send out unsolicited response
+          for (Iface iface : this.interfaces.values()) {
+            
+          }
+      }
   }
 
   /**
@@ -221,4 +245,5 @@ public class Router extends Device {
 
     this.sendPacket(etherPacket, outIface);
   }
+  
 }
