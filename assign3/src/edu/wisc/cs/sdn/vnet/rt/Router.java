@@ -6,11 +6,19 @@ import edu.wisc.cs.sdn.vnet.Iface;
 
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.RIPv2;
+import net.floodlightcontroller.packet.UDP;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
 public class Router extends Device {
+  public static final byte COMMAND_REQUEST = 1;
+  public static final byte COMMAND_RESPONSE = 2;
+  public static short RIP_PORT = (short)520;
+  public static String MULTICAST_RIP = "224.0.0.9";
+  public static String BROADCAST_MAC = "FF:FF:FF:FF:FF:FF";
+  
   /** Routing table for the router */
   private RouteTable routeTable;
 
@@ -68,7 +76,27 @@ public class Router extends Device {
 
     //
     System.out.println(routeTable);
-
+    
+    // Initial RIPv2 request
+    RIPv2 initRequestRip = new RIPv2();
+    initRequestRip.setCommand(COMMAND_REQUEST);
+    UDP initRequestUdp = new UDP();
+    initRequestUdp.setPayload(initRequestRip);
+    initRequestUdp.setSourcePort(RIP_PORT);
+    initRequestUdp.setDestinationPort(RIP_PORT);
+    // Send out on each of this router's interfaces
+    for (Iface iface : this.interfaces.values()) {
+      IPv4 initRequestIPv4 = new IPv4();
+      initRequestIPv4.setPayload(initRequestUdp);
+      initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
+      initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+      Ethernet initRequestEthernet = new Ethernet();
+      initRequestEthernet.setPayload(initRequestIPv4);
+      initRequestEthernet.setDestinationMACAddress(BROADCAST_MAC);
+      initRequestEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
+      
+      sendPacket(initRequestEthernet, iface);
+    }
   }
 
   /**
