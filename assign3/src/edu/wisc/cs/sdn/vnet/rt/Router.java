@@ -78,6 +78,7 @@ public class Router extends Device implements Runnable {
       routeTable.insert(destIp, 0, ifaceMask, iface);
     }
 
+    System.out.println("-------------------------------------------------");
     System.out.println("Initialized route table");
     System.out.println("-------------------------------------------------");
     System.out.println(routeTable);
@@ -105,6 +106,11 @@ public class Router extends Device implements Runnable {
       initRequestEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
       
       sendPacket(initRequestEthernet, iface);
+      System.out.println("-------------------------------------------------");
+      System.out.println("Initial packet sent over iface: " + iface.getName());
+      System.out.println("-------------------------------------------------");
+      System.out.println(initRequestEthernet);
+      
     }
     
     this.responseThread = new Thread(this);
