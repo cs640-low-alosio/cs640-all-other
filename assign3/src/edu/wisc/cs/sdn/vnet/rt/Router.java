@@ -78,8 +78,10 @@ public class Router extends Device implements Runnable {
       routeTable.insert(destIp, 0, ifaceMask, iface);
     }
 
-    //
+    System.out.println("Initialized route table");
+    System.out.println("-------------------------------------------------");
     System.out.println(routeTable);
+    System.out.println("-------------------------------------------------");
     
     // Initial RIPv2 request
     RIPv2 initRequestRip = new RIPv2();
