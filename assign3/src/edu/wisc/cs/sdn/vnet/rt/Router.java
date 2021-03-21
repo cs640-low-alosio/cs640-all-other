@@ -263,7 +263,9 @@ public class Router extends Device implements Runnable {
     if ((routeEntry = routeTable.lookup(destIp)) != null) {
       if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
         // route is uninteresting - just update TTL and ignore
-        routeEntry.setTtl(RouteEntry.TTL_INIT_SECONDS);
+        if (routeEntry.getTtl() != -1) {
+          routeEntry.setTtl(RouteEntry.TTL_INIT_SECONDS);          
+        }
         return;
       }
       
