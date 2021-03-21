@@ -340,11 +340,11 @@ public class RouteTable implements Runnable {
           if (entry.getTtl() == -1) {
             continue;
           } else if (entry.getTtl() == 0) {
-            this.remove(entry.getDestinationAddress(), entry.getMaskAddress());
+            this.entries.remove(entry);
             System.out.println("Remove entry: " + entry);
           } else {
             entry.decrementTtl();
-            System.out.println("Decrement routeEntry: " + entry);
+//            System.out.println("Decrement routeEntry:" + entry);
           }
         }
       }
