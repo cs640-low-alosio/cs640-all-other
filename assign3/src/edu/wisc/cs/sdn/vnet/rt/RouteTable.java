@@ -10,7 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.floodlightcontroller.packet.IPv4;
 import edu.wisc.cs.sdn.vnet.Iface;
-import edu.wisc.cs.sdn.vnet.sw.MACTableEntry;
 
 /**
  * Route table for a router.
@@ -337,16 +336,15 @@ public class RouteTable implements Runnable {
 
       // Timeout entries
       synchronized (this.entries) {
-
         for (RouteEntry entry : this.entries) {
           if (entry.getTtl() == -1) {
             continue;
           } else if (entry.getTtl() == 0) {
-            this.entries.remove(entry);
+            this.remove(entry.getDestinationAddress(), entry.getMaskAddress());
             System.out.println("Remove entry: " + entry);
           } else {
             entry.decrementTtl();
-//            System.out.println("Decrement routeEntry:" + entry);
+            System.out.println("Decrement routeEntry: " + entry);
           }
         }
       }
