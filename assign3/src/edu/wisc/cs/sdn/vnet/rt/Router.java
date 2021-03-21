@@ -257,8 +257,6 @@ public class Router extends Device implements Runnable {
       newCost = 16;
     }
     
-//    routeTable.resetTtl(destIp, subnetMask);
-    
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(destIp)) != null) {
       if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {

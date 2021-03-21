@@ -340,9 +340,10 @@ public class RouteTable implements Runnable {
 
         for (RouteEntry entry : this.entries) {
           if (entry.getTtl() == -1) {
-            break;
+            continue;
           } else if (entry.getTtl() == 0) {
             this.entries.remove(entry);
+            System.out.println("Remove entry: " + entry);
           } else {
             entry.decrementTtl();
             System.out.println("Decrement routeEntry:" + entry);
