@@ -29,7 +29,7 @@ public class RIPv2Entry
 
 	public String toString()
 	{
-        return String.format("RIPv2Entry : {addressFamily=%d, routeTag=%d, address=%s, subnetMask=%s, nextHopAddress=%s, metric=%d}", 
+        return String.format("\n\tRIPv2Entry : {addressFamily=%d, routeTag=%d, address=%s, subnetMask=%s, nextHopAddress=%s, metric=%d}", 
                 this.addressFamily, this.routeTag, 
                 IPv4.fromIPv4Address(this.address), 
                 IPv4.fromIPv4Address(this.subnetMask),

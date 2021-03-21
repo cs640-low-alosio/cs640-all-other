@@ -132,7 +132,7 @@ public class Router extends Device implements Runnable {
         break;
       }
       
-      System.out.println("*** -> Unsolicited RIP response");
+      System.out.print("*** -> Unsolicited RIP response");
       sendRipReponse();
     }
   }
@@ -243,6 +243,10 @@ public class Router extends Device implements Runnable {
       }
     }
     
+    System.out.println("Updated route table after handling RIP");
+    System.out.println("-------------------------------------------------");
+    System.out.print(this.routeTable.toString());
+    System.out.println("-------------------------------------------------");
   }
 
   private void mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
