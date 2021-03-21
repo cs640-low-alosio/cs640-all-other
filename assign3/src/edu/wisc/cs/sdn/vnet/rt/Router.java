@@ -297,7 +297,8 @@ public class Router extends Device implements Runnable {
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
     } else {
       // add new route table entry
-      routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, newCost);
+      routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
+          newCost);
     }
 
   }
