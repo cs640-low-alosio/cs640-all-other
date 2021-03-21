@@ -257,12 +257,13 @@ public class Router extends Device implements Runnable {
       newCost = 16;
     }
     
-    routeTable.resetTtl(destIp, subnetMask);
+//    routeTable.resetTtl(destIp, subnetMask);
     
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(destIp)) != null) {
       if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
-        // route is uninteresting - just ignore it
+        // route is uninteresting - just update TTL and ignore
+        routeEntry.setTtl(RouteEntry.TTL_INIT_SECONDS);
         return;
       }
       

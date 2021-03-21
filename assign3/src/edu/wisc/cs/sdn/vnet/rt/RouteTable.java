@@ -315,7 +315,7 @@ public class RouteTable implements Runnable {
         return " WARNING: route table empty";
       }
 
-      String result = "Destination\tGateway\t\tMask\t\tIface\tTtl\n";
+      String result = "Destination\tGateway\t\tMask\t\tIface\tTtl\tCost\n";
       for (RouteEntry entry : entries) {
         result += entry.toString() + "\n";
       }
@@ -345,6 +345,10 @@ public class RouteTable implements Runnable {
             this.entries.remove(entry);
           } else {
             entry.decrementTtl();
+            System.out.println("Decrement routeEntry:");
+            System.out.println("-------------------------------------------------");
+            System.out.println(entry);
+            System.out.println("-------------------------------------------------");
           }
         }
       }
