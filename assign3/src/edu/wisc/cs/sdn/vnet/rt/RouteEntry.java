@@ -9,7 +9,7 @@ import edu.wisc.cs.sdn.vnet.Iface;
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
 public class RouteEntry {
-  public static final int TTL_INIT_SECONDS = 30;
+  public static final int TTL_INIT_SEC = 30;
   
   /** Destination IP address */
   private int destinationAddress;

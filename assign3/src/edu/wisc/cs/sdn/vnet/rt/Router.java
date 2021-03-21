@@ -242,13 +242,12 @@ public class Router extends Device implements Runnable {
         int nextHopIp = ipPacket.getSourceAddress();
         handleRip(ripPacket, nextHopIp, inIface);
       }
-    } else { // use 
-      switch(etherPacket.getEtherType())
-      {
-      case Ethernet.TYPE_IPv4:
+    } else { // use
+      switch (etherPacket.getEtherType()) {
+        case Ethernet.TYPE_IPv4:
           this.handleIpPacket(etherPacket, inIface);
           break;
-      // Ignore all other packet types, for now
+        // Ignore all other packet types, for now
       }
     }
 
@@ -283,6 +282,9 @@ public class Router extends Device implements Runnable {
     int newDestIp = ripEntry.getAddress();
     int newSubnetMask = ripEntry.getSubnetMask();
     int newCost = ripEntry.getMetric() + 1;
+    if (newCost == 16) { // cost is infinite, so ignore
+      return;
+    }
 
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
@@ -292,20 +294,10 @@ public class Router extends Device implements Runnable {
       }
 
       // update route entry with better route or metric for current next hop
-      if (newCost == 16) {
-        routeTable.remove(newDestIp, newSubnetMask);
-      } else {
-        routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, RouteEntry.TTL_INIT_SECONDS,
-            newCost);
-      }
+      routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
     } else {
       // add new route table entry
-      if (newCost == 16) {
-        return;
-      } else {
-        routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SECONDS,
-            newCost);
-      }
+      routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, newCost);
     }
 
   }

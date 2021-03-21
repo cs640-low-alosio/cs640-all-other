@@ -241,7 +241,7 @@ public class RouteTable implements Runnable {
       if (null == entry) {
         return false;
       }
-      entry.setTtl(RouteEntry.TTL_INIT_SECONDS);
+      entry.setTtl(RouteEntry.TTL_INIT_SEC);
     }
     return true;
   }
@@ -256,8 +256,8 @@ public class RouteTable implements Runnable {
    * @param cost           
    * @return true if a matching entry was found and updated, otherwise false
    */
-  public boolean update(int dstIp, int maskIp, int gwIp, Iface iface, int ttl, int cost) {
-    this.update(dstIp, maskIp, gwIp, iface, ttl);
+  public boolean update(int dstIp, int maskIp, int gwIp, Iface iface, int cost) {
+    this.update(dstIp, maskIp, gwIp, iface);
     synchronized (this.entries) {
       RouteEntry entry = this.find(dstIp, maskIp);
       if (null == entry) {
@@ -277,7 +277,7 @@ public class RouteTable implements Runnable {
    * @param iface          new router interface for matching entry
    * @return true if a matching entry was found and updated, otherwise false
    */
-  public boolean update(int dstIp, int maskIp, int gwIp, Iface iface, int ttl) {
+  public boolean update(int dstIp, int maskIp, int gwIp, Iface iface) {
     synchronized (this.entries) {
       RouteEntry entry = this.find(dstIp, maskIp);
       if (null == entry) {
@@ -285,7 +285,7 @@ public class RouteTable implements Runnable {
       }
       entry.setGatewayAddress(gwIp);
       entry.setInterface(iface);
-      entry.setTtl(ttl);
+      entry.setTtl(RouteEntry.TTL_INIT_SEC);
     }
     return true;
   }
