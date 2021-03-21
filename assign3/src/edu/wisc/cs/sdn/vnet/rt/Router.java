@@ -8,6 +8,7 @@ import edu.wisc.cs.sdn.vnet.sw.MACTableEntry;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.RIPv2;
+import net.floodlightcontroller.packet.RIPv2Entry;
 import net.floodlightcontroller.packet.UDP;
 
 /**
@@ -16,15 +17,15 @@ import net.floodlightcontroller.packet.UDP;
 public class Router extends Device implements Runnable {
   public static final byte COMMAND_REQUEST = 1;
   public static final byte COMMAND_RESPONSE = 2;
-  public static short RIP_PORT = (short)520;
+  public static short RIP_PORT = (short) 520;
   public static String MULTICAST_RIP = "224.0.0.9";
   public static String BROADCAST_MAC = "FF:FF:FF:FF:FF:FF";
   public static final short TYPE_IPv4 = 0x0800;
   public static final byte PROTOCOL_UDP = 0x11;
   public static int UNSOLICITED_RESPONSE_INTERVAL = 10000;
-  
+
   private Thread responseThread;
-  
+
   /** Routing table for the router */
   private RouteTable routeTable;
 
@@ -67,7 +68,7 @@ public class Router extends Device implements Runnable {
   }
 
   /**
-   * 
+   * Start router with RIPv2
    */
   public void runRip() {
     // Connect to directly reachable subnets - don't expire
@@ -76,8 +77,9 @@ public class Router extends Device implements Runnable {
       int ifaceMask = iface.getSubnetMask();
 
       int destIp = ifaceIp & ifaceMask;
-
-      routeTable.insert(destIp, 0, ifaceMask, iface);
+      
+      // neighbors have cost of 1
+      routeTable.insert(destIp, 0, ifaceMask, iface, 1);
     }
 
     System.out.println("-------------------------------------------------");
@@ -85,16 +87,14 @@ public class Router extends Device implements Runnable {
     System.out.println("-------------------------------------------------");
     System.out.println(routeTable);
     System.out.println("-------------------------------------------------");
-    
+
     // Initial RIPv2 request
     RIPv2 initRequestRip = new RIPv2();
     initRequestRip.setCommand(COMMAND_REQUEST);
-    initRequestRip.serialize();
     UDP initRequestUdp = new UDP();
     initRequestUdp.setPayload(initRequestRip);
     initRequestUdp.setSourcePort(RIP_PORT);
     initRequestUdp.setDestinationPort(RIP_PORT);
-    initRequestUdp.serialize();
     // Send out on each of this router's interfaces
     for (Iface iface : this.interfaces.values()) {
       IPv4 initRequestIPv4 = new IPv4();
@@ -102,42 +102,72 @@ public class Router extends Device implements Runnable {
       initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
       initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
       initRequestIPv4.setProtocol(PROTOCOL_UDP);
-      initRequestIPv4.serialize();
       Ethernet initRequestEthernet = new Ethernet();
       initRequestEthernet.setPayload(initRequestIPv4);
       initRequestEthernet.setDestinationMACAddress(BROADCAST_MAC);
       initRequestEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
       initRequestEthernet.setEtherType(TYPE_IPv4);
-      
+
       sendPacket(initRequestEthernet, iface);
-      System.out.println("*** -> Initial packet sent over iface: " + iface.getName());
-      System.out.println(initRequestEthernet.toString().replace("\n", "\n\t"));
-      
+      System.out.println("*** -> Initial packet sent over iface: " + iface.getName()
+          + initRequestEthernet.toString().replace("\n", "\n\t"));
     }
-    
+
     this.responseThread = new Thread(this);
     responseThread.start();
   }
-  
+
   /**
    * Send unsolicited response every thirty seconds
    * 
    */
-  public void run()
-  {
-      while (true)
-      {
-          // Run every 10 seconds
-          try 
-          { Thread.sleep(UNSOLICITED_RESPONSE_INTERVAL); }
-          catch (InterruptedException e) 
-          { break; }
-          
-          // Send out unsolicited response
-          for (Iface iface : this.interfaces.values()) {
-            
-          }
+  public void run() {
+    while (true) {
+      // Run every 10 seconds
+      try {
+        Thread.sleep(UNSOLICITED_RESPONSE_INTERVAL);
+      } catch (InterruptedException e) {
+        break;
       }
+
+      // Send out unsolicited response
+      RIPv2 response = new RIPv2();
+      
+      for (RouteEntry entry : this.routeTable.getEntries()) {
+        int address = entry.getDestinationAddress();
+        int subnetMask = entry.getMaskAddress();
+        int metric = entry.getCost();
+        
+        RIPv2Entry newEntry = new RIPv2Entry(address, subnetMask, metric);
+        response.addEntry(newEntry);
+      }
+      
+      System.out.println("*** -> Unsolicited RIP response");
+      System.out.println(response);
+      
+      response.setCommand(COMMAND_REQUEST);
+      UDP responseUdp = new UDP();
+      responseUdp.setPayload(response);
+      responseUdp.setSourcePort(RIP_PORT);
+      responseUdp.setDestinationPort(RIP_PORT);
+      // Send out on each of this router's interfaces
+      for (Iface iface : this.interfaces.values()) {
+        IPv4 responseIPv4 = new IPv4();
+        responseIPv4.setPayload(responseUdp);
+        responseIPv4.setDestinationAddress(MULTICAST_RIP);
+        responseIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+        responseIPv4.setProtocol(PROTOCOL_UDP);
+        Ethernet responseEthernet = new Ethernet();
+        responseEthernet.setPayload(responseIPv4);
+        responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
+        responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
+        responseEthernet.setEtherType(TYPE_IPv4);
+
+        sendPacket(responseEthernet, iface);
+        System.out.println("*** -> Unsolicited RIP response sent over iface: " + iface.getName()
+            + responseEthernet.toString().replace("\n", "\n\t"));
+      }
+    }
   }
 
   /**
@@ -262,5 +292,4 @@ public class Router extends Device implements Runnable {
 
     this.sendPacket(etherPacket, outIface);
   }
-  
 }

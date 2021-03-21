@@ -32,6 +32,10 @@ public class RouteTable implements Runnable {
     timeoutThread = new Thread(this);
     timeoutThread.start();
   }
+  
+  public List<RouteEntry> getEntries() {
+    return this.entries;
+  }
 
   /**
    * Lookup the route entry that matches a given IP address.
@@ -161,7 +165,7 @@ public class RouteTable implements Runnable {
   }
 
   /**
-   * Add an entry to the route table.
+   * Add an entry to the route table for RIPv2
    * 
    * @param dstIp  destination IP
    * @param gwIp   gateway IP
@@ -169,13 +173,28 @@ public class RouteTable implements Runnable {
    * @param iface  router interface out which to send packets to reach the destination or gateway
    * @param time   to live
    */
-  public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int ttl) {
-    RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, ttl);
+  public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int ttl, int cost) {
+    RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, ttl, cost);
     synchronized (this.entries) {
       this.entries.add(entry);
     }
   }
 
+  /**
+   * Add an entry to the route table.
+   * 
+   * @param dstIp  destination IP
+   * @param gwIp   gateway IP
+   * @param maskIp subnet mask
+   * @param iface  router interface out which to send packets to reach the destination or gateway
+   */
+  public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int cost) {
+    RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, cost);
+    synchronized (this.entries) {
+      this.entries.add(entry);
+    }
+  }
+  
   /**
    * Add an entry to the route table.
    * 

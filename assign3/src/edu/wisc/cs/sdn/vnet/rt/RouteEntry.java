@@ -22,8 +22,36 @@ public class RouteEntry {
    * Router interface out which packets should be sent to reach the destination or gateway
    */
   private Iface iface;
-
+  
+  /**
+   * Time before entries expire
+   */
   private int ttl;
+  
+  /**
+   * Metric for RIPv2
+   */
+  private int cost;
+
+  /**
+   * Create a new route table entry for RIPv2
+   * 
+   * @param destinationAddress destination IP address
+   * @param gatewayAddress     gateway IP address
+   * @param maskAddress        subnet mask
+   * @param iface              the router interface out which packets should be sent to reach the
+   *                           destination or gateway
+   * @param ttl
+   */
+  public RouteEntry(int destinationAddress, int gatewayAddress, int maskAddress, Iface iface,
+      int ttl, int cost) {
+    this.destinationAddress = destinationAddress;
+    this.gatewayAddress = gatewayAddress;
+    this.maskAddress = maskAddress;
+    this.iface = iface;
+    this.ttl = ttl;
+    this.cost = cost;
+  }
 
   /**
    * Create a new route table entry.
@@ -33,17 +61,16 @@ public class RouteEntry {
    * @param maskAddress        subnet mask
    * @param iface              the router interface out which packets should be sent to reach the
    *                           destination or gateway
-   * @param time               to live
    */
-  public RouteEntry(int destinationAddress, int gatewayAddress, int maskAddress, Iface iface,
-      int ttl) {
+  public RouteEntry(int destinationAddress, int gatewayAddress, int maskAddress, Iface iface, int cost) {
     this.destinationAddress = destinationAddress;
     this.gatewayAddress = gatewayAddress;
     this.maskAddress = maskAddress;
     this.iface = iface;
-    this.ttl = ttl;
+    this.ttl = -1;
+    this.cost = cost;
   }
-
+  
   /**
    * Create a new route table entry.
    * 
@@ -114,5 +141,13 @@ public class RouteEntry {
 
   public void decrementTtl() {
     this.ttl--;
+  }
+  
+  public void setCost(int cost) {
+    this.cost = cost;
+  }
+  
+  public int getCost() {
+    return this.cost;
   }
 }
