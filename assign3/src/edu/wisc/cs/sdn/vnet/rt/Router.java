@@ -26,6 +26,9 @@ public class Router extends Device implements Runnable {
   /** ARP cache for the router */
   private ArpCache arpCache;
 
+  /** Router uses RIP to for routing instead of a provided, static table */
+  private boolean isRipRouter;
+
   /**
    * Creates a router for a specific host.
    * 
@@ -35,6 +38,7 @@ public class Router extends Device implements Runnable {
     super(host, logfile);
     this.routeTable = new RouteTable();
     this.arpCache = new ArpCache();
+    this.isRipRouter = false;
   }
 
   /**
@@ -61,8 +65,14 @@ public class Router extends Device implements Runnable {
     System.out.println("-------------------------------------------------");
   }
 
+  public void setRipRouterTrue() {
+    this.isRipRouter = true;
+  }
+
   /**
    * Start router with RIPv2
+   * 
+   * Gets called by Main when starting a router without "-r" parameter
    */
   public void runRip() {
     // Connect to directly reachable subnets - don't expire
@@ -138,14 +148,14 @@ public class Router extends Device implements Runnable {
       Ethernet responseEthernet = buildRipResponseFrame(responseUdp, iface);
 
       sendPacket(responseEthernet, iface);
-//      System.out.println("*** -> RIP response sent over iface: " + iface.getName()
-//          + responseEthernet.toString().replace("\n", "\n\t"));
+      // System.out.println("*** -> RIP response sent over iface: " + iface.getName()
+      // + responseEthernet.toString().replace("\n", "\n\t"));
     }
   }
-  
+
   private UDP buildRipResponseDatagram() {
     RIPv2 response = new RIPv2();
-    
+
     List<RouteEntry> entries = this.routeTable.getEntries();
     synchronized (entries) {
       for (RouteEntry entry : entries) {
@@ -157,17 +167,17 @@ public class Router extends Device implements Runnable {
         response.addEntry(newEntry);
       }
     }
-    System.out.println(response);
+    // System.out.println(response);
 
     response.setCommand(RIPv2.COMMAND_RESPONSE);
     UDP responseUdp = new UDP();
     responseUdp.setPayload(response);
     responseUdp.setSourcePort(UDP.RIP_PORT);
     responseUdp.setDestinationPort(UDP.RIP_PORT);
-    
+
     return responseUdp;
   }
-  
+
   private static Ethernet buildRipResponseFrame(UDP responseUdp, Iface iface) {
     IPv4 responseIPv4 = new IPv4();
     responseIPv4.setPayload(responseUdp);
@@ -179,7 +189,7 @@ public class Router extends Device implements Runnable {
     responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
     responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
     responseEthernet.setEtherType(Ethernet.TYPE_IPv4);
-    
+
     return responseEthernet;
   }
 
@@ -209,33 +219,39 @@ public class Router extends Device implements Runnable {
   public void handlePacket(Ethernet etherPacket, Iface inIface) {
     System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
 
-    /********************************************************************/
-    /* Handle packets */
+    if (isRipRouter) { // piazza@315 - only use RIP when configured for it
+      if (etherPacket.getEtherType() == Ethernet.TYPE_IPv4) {
+        IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+        // Commented out after piazza@319
+        // if (ipPacket.getDestinationAddress() != IPv4.toIPv4Address(MULTICAST_RIP)) {
+        // this.handleIpPacket(etherPacket, inIface);
+        // return;
+        // }
+        if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
+          this.handleIpPacket(etherPacket, inIface);
+          return;
+        }
+        UDP udpPacket = (UDP) ipPacket.getPayload();
+        if ((udpPacket.getDestinationPort() != UDP.RIP_PORT)
+            || (udpPacket.getSourcePort() != UDP.RIP_PORT)) {
+          this.handleIpPacket(etherPacket, inIface);
+          return;
+        }
 
-    if (etherPacket.getEtherType() == Ethernet.TYPE_IPv4) {
-      IPv4 ipPacket = (IPv4) etherPacket.getPayload();
-      // Commented out after piazza@319
-      // if (ipPacket.getDestinationAddress() != IPv4.toIPv4Address(MULTICAST_RIP)) {
-      // this.handleIpPacket(etherPacket, inIface);
-      // return;
-      // }
-      if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
-        this.handleIpPacket(etherPacket, inIface);
-        return;
+        RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
+        int nextHopIp = ipPacket.getSourceAddress();
+        handleRip(ripPacket, nextHopIp, inIface);
       }
-      UDP udpPacket = (UDP) ipPacket.getPayload();
-      if ((udpPacket.getDestinationPort() != UDP.RIP_PORT)
-          || (udpPacket.getSourcePort() != UDP.RIP_PORT)) {
-        this.handleIpPacket(etherPacket, inIface);
-        return;
-      }
-
-      RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
-      int nextHopIp = ipPacket.getSourceAddress();
-      handleRip(ripPacket, nextHopIp, inIface);
+    } else { // use 
+      switch(etherPacket.getEtherType())
+      {
+      case Ethernet.TYPE_IPv4:
+          this.handleIpPacket(etherPacket, inIface);
+          break;
       // Ignore all other packet types, for now
-      /********************************************************************/
+      }
     }
+
   }
 
   private void handleRip(RIPv2 ripPacket, int nextHopIp, Iface inIface) {

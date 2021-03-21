@@ -91,6 +91,7 @@ public class Main
 			else {
               // Start RIP
 			  ((Router)dev).runRip();
+			  ((Router)dev).setRipRouterTrue();
             }
 			
 			// Read static ACP cache
