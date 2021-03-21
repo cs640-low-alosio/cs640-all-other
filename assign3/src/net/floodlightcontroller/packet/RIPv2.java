@@ -102,7 +102,7 @@ public class RIPv2 extends BasePacket
 		String x = String.format("RIP : {command=%d, version=%d, entries={",
                 this.command, this.version);
 		for (RIPv2Entry entry : this.entries)
-		{ x = x + entry.toString() + ","; }
+		{ x = "\n\t" + x + entry.toString() + ","; }
         x = x + "}}";
 		return x;
 	}

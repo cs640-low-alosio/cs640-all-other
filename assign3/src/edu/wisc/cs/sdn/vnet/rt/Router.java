@@ -1,6 +1,8 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
@@ -77,7 +79,7 @@ public class Router extends Device implements Runnable {
       int ifaceMask = iface.getSubnetMask();
 
       int destIp = ifaceIp & ifaceMask;
-      
+
       // neighbors have cost of 1
       routeTable.insert(destIp, 0, ifaceMask, iface, 1);
     }
@@ -129,44 +131,47 @@ public class Router extends Device implements Runnable {
       } catch (InterruptedException e) {
         break;
       }
-
-      // Send out unsolicited response
-      RIPv2 response = new RIPv2();
-      
-      for (RouteEntry entry : this.routeTable.getEntries()) {
-        int address = entry.getDestinationAddress();
-        int subnetMask = entry.getMaskAddress();
-        int metric = entry.getCost();
-        
-        RIPv2Entry newEntry = new RIPv2Entry(address, subnetMask, metric);
-        response.addEntry(newEntry);
-      }
       
       System.out.println("*** -> Unsolicited RIP response");
-      System.out.println(response);
-      
-      response.setCommand(COMMAND_REQUEST);
-      UDP responseUdp = new UDP();
-      responseUdp.setPayload(response);
-      responseUdp.setSourcePort(RIP_PORT);
-      responseUdp.setDestinationPort(RIP_PORT);
-      // Send out on each of this router's interfaces
-      for (Iface iface : this.interfaces.values()) {
-        IPv4 responseIPv4 = new IPv4();
-        responseIPv4.setPayload(responseUdp);
-        responseIPv4.setDestinationAddress(MULTICAST_RIP);
-        responseIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
-        responseIPv4.setProtocol(PROTOCOL_UDP);
-        Ethernet responseEthernet = new Ethernet();
-        responseEthernet.setPayload(responseIPv4);
-        responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
-        responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
-        responseEthernet.setEtherType(TYPE_IPv4);
+      sendRipReponse();
+    }
+  }
+  
+  private void sendRipReponse() {
+    // Send out unsolicited response
+    RIPv2 response = new RIPv2();
 
-        sendPacket(responseEthernet, iface);
-        System.out.println("*** -> Unsolicited RIP response sent over iface: " + iface.getName()
-            + responseEthernet.toString().replace("\n", "\n\t"));
-      }
+    for (RouteEntry entry : this.routeTable.getEntries()) {
+      int address = entry.getDestinationAddress();
+      int subnetMask = entry.getMaskAddress();
+      int metric = entry.getCost();
+
+      RIPv2Entry newEntry = new RIPv2Entry(address, subnetMask, metric);
+      response.addEntry(newEntry);
+    }
+    System.out.println(response);
+
+    response.setCommand(COMMAND_REQUEST);
+    UDP responseUdp = new UDP();
+    responseUdp.setPayload(response);
+    responseUdp.setSourcePort(RIP_PORT);
+    responseUdp.setDestinationPort(RIP_PORT);
+    // Send out on each of this router's interfaces
+    for (Iface iface : this.interfaces.values()) {
+      IPv4 responseIPv4 = new IPv4();
+      responseIPv4.setPayload(responseUdp);
+      responseIPv4.setDestinationAddress(MULTICAST_RIP);
+      responseIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+      responseIPv4.setProtocol(PROTOCOL_UDP);
+      Ethernet responseEthernet = new Ethernet();
+      responseEthernet.setPayload(responseIPv4);
+      responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
+      responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
+      responseEthernet.setEtherType(TYPE_IPv4);
+
+      sendPacket(responseEthernet, iface);
+      System.out.println("*** -> RIP response sent over iface: " + iface.getName()
+          + responseEthernet.toString().replace("\n", "\n\t"));
     }
   }
 
@@ -197,16 +202,73 @@ public class Router extends Device implements Runnable {
     System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
 
     /********************************************************************/
-    /* TODO: Handle packets */
+    /* Handle packets */
 
-    switch (etherPacket.getEtherType()) {
-      case Ethernet.TYPE_IPv4:
+    if (etherPacket.getEtherType() == Ethernet.TYPE_IPv4) {
+      IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+      if (ipPacket.getDestinationAddress() != IPv4.toIPv4Address(MULTICAST_RIP)) {
         this.handleIpPacket(etherPacket, inIface);
-        break;
+        return;
+      }
+      if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
+        this.handleIpPacket(etherPacket, inIface);
+        return;
+      }
+      UDP udpPacket = (UDP) ipPacket.getPayload();
+      if (udpPacket.getDestinationPort() != RIP_PORT) {
+        this.handleIpPacket(etherPacket, inIface);
+        return;
+      }
+      
+      RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
+      int nextHopIp = ipPacket.getSourceAddress();
+      handleRip(ripPacket, nextHopIp, inIface);
       // Ignore all other packet types, for now
+      /********************************************************************/
     }
+  }
 
-    /********************************************************************/
+  private void handleRip(RIPv2 ripPacket, int nextHopIp, Iface inIface) {
+    // Request
+    if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
+      System.out.println("*** -> Solicited RIP response");
+      sendRipReponse();
+    }
+    
+    // Response
+    if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
+      List<RIPv2Entry> ripEntries = ripPacket.getEntries();
+      for (RIPv2Entry entry : ripEntries) {
+        mergeRoute(entry, nextHopIp, inIface);
+      }
+    }
+    
+  }
+
+  private void mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
+    int destIp = ripEntry.getAddress();
+    int subnetMask = ripEntry.getSubnetMask();
+    int newCost = ripEntry.getMetric() + 1;
+    if (newCost >= 16) {
+      newCost = 16;
+    }
+    
+    routeTable.resetTtl(destIp, subnetMask);
+    
+    RouteEntry routeEntry;
+    if ((routeEntry = routeTable.lookup(destIp)) != null) {
+      if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
+        // route is uninteresting - just ignore it
+        return;
+      }
+      
+      // update route entry with better route or metric for current next hop
+      routeTable.update(destIp, subnetMask, nextHopIp, inIface, RouteEntry.TTL_INIT_SECONDS, newCost);
+    } else {
+      // add new route table entry
+      routeTable.insert(destIp, nextHopIp, subnetMask, inIface, RouteEntry.TTL_INIT_SECONDS, newCost);
+    }
+    
   }
 
   private void handleIpPacket(Ethernet etherPacket, Iface inIface) {

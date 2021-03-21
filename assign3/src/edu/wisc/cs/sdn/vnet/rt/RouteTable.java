@@ -227,6 +227,47 @@ public class RouteTable implements Runnable {
     }
     return true;
   }
+  
+  /***
+   * Reset TTL to thirty seconds. piazza@316
+   * 
+   * @param dstIp
+   * @param maskIp
+   * @param ttl
+   * @return
+   */
+  public boolean resetTtl(int dstIp, int maskIp) {
+    synchronized (this.entries) {
+      RouteEntry entry = this.find(dstIp, maskIp);
+      if (null == entry) {
+        return false;
+      }
+      entry.setTtl(RouteEntry.TTL_INIT_SECONDS);
+    }
+    return true;
+  }
+  
+  /**
+   * Update an entry in the route table.
+   * 
+   * @param dstIP          destination IP of the entry to update
+   * @param maskIp         subnet mask of the entry to update
+   * @param gatewayAddress new gateway IP address for matching entry
+   * @param iface          new router interface for matching entry
+   * @param cost           
+   * @return true if a matching entry was found and updated, otherwise false
+   */
+  public boolean update(int dstIp, int maskIp, int gwIp, Iface iface, int ttl, int cost) {
+    this.update(dstIp, maskIp, gwIp, iface, ttl);
+    synchronized (this.entries) {
+      RouteEntry entry = this.find(dstIp, maskIp);
+      if (null == entry) {
+        return false;
+      }
+      entry.setCost(cost);
+    }
+    return true;
+  }
 
   /**
    * Update an entry in the route table.
