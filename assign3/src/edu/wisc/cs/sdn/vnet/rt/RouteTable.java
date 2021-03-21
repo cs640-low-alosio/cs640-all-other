@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.floodlightcontroller.packet.IPv4;
@@ -321,6 +322,15 @@ public class RouteTable implements Runnable {
       return result;
     }
   }
+  
+  public List<Integer> getDestIpList() {
+    List<Integer> destIpList = new LinkedList<Integer>();
+    for (RouteEntry entry : this.entries) {
+      destIpList.add(entry.getDestinationAddress());
+    }
+    
+    return destIpList;
+  }
 
   /**
    * Expire after thirty seconds
@@ -336,7 +346,9 @@ public class RouteTable implements Runnable {
 
       // Timeout entries
       synchronized (this.entries) {
-        for (RouteEntry entry : this.entries) {
+        List<Integer> destIpList = this.getDestIpList();
+        for (Integer destIp : destIpList) {
+          RouteEntry entry = this.lookup(destIp); 
           if (entry.getTtl() == -1) {
             continue;
           } else if (entry.getTtl() == 0) {
