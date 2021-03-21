@@ -103,8 +103,8 @@ public class Router extends Device implements Runnable {
       initRequestEthernet.setEtherType(Ethernet.TYPE_IPv4);
 
       sendPacket(initRequestEthernet, iface);
-      System.out.println("*** -> Initial packet sent over iface: " + iface.getName()
-          + initRequestEthernet.toString().replace("\n", "\n\t"));
+      // System.out.println("*** -> Initial packet sent over iface: " + iface.getName()
+      // + initRequestEthernet.toString().replace("\n", "\n\t"));
     }
 
     this.responseThread = new Thread(this);
@@ -124,15 +124,28 @@ public class Router extends Device implements Runnable {
         break;
       }
 
-      System.out.print("*** -> Unsolicited RIP response");
+      System.out.print("Sending unsolicited RIP response");
       sendRipReponse();
     }
   }
 
   private void sendRipReponse() {
     // Send out unsolicited response
-    RIPv2 response = new RIPv2();
+    UDP responseUdp = buildRipResponseDatagram();
 
+    // Send out on each of this router's interfaces
+    for (Iface iface : this.interfaces.values()) {
+      Ethernet responseEthernet = buildRipResponseFrame(responseUdp, iface);
+
+      sendPacket(responseEthernet, iface);
+//      System.out.println("*** -> RIP response sent over iface: " + iface.getName()
+//          + responseEthernet.toString().replace("\n", "\n\t"));
+    }
+  }
+  
+  private UDP buildRipResponseDatagram() {
+    RIPv2 response = new RIPv2();
+    
     List<RouteEntry> entries = this.routeTable.getEntries();
     synchronized (entries) {
       for (RouteEntry entry : entries) {
@@ -151,23 +164,23 @@ public class Router extends Device implements Runnable {
     responseUdp.setPayload(response);
     responseUdp.setSourcePort(UDP.RIP_PORT);
     responseUdp.setDestinationPort(UDP.RIP_PORT);
-    // Send out on each of this router's interfaces
-    for (Iface iface : this.interfaces.values()) {
-      IPv4 responseIPv4 = new IPv4();
-      responseIPv4.setPayload(responseUdp);
-      responseIPv4.setDestinationAddress(MULTICAST_RIP);
-      responseIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
-      responseIPv4.setProtocol(IPv4.PROTOCOL_UDP);
-      Ethernet responseEthernet = new Ethernet();
-      responseEthernet.setPayload(responseIPv4);
-      responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
-      responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
-      responseEthernet.setEtherType(Ethernet.TYPE_IPv4);
-
-      sendPacket(responseEthernet, iface);
-      System.out.println("*** -> RIP response sent over iface: " + iface.getName()
-          + responseEthernet.toString().replace("\n", "\n\t"));
-    }
+    
+    return responseUdp;
+  }
+  
+  private static Ethernet buildRipResponseFrame(UDP responseUdp, Iface iface) {
+    IPv4 responseIPv4 = new IPv4();
+    responseIPv4.setPayload(responseUdp);
+    responseIPv4.setDestinationAddress(MULTICAST_RIP);
+    responseIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
+    responseIPv4.setProtocol(IPv4.PROTOCOL_UDP);
+    Ethernet responseEthernet = new Ethernet();
+    responseEthernet.setPayload(responseIPv4);
+    responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
+    responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
+    responseEthernet.setEtherType(Ethernet.TYPE_IPv4);
+    
+    return responseEthernet;
   }
 
   /**
@@ -228,12 +241,16 @@ public class Router extends Device implements Runnable {
   private void handleRip(RIPv2 ripPacket, int nextHopIp, Iface inIface) {
     // Request
     if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
-      System.out.println("*** -> Solicited RIP response");
-      sendRipReponse();
+      System.out.println("Handle RIP request");
+      // Send response only to requester piazza@322
+      UDP responseUdp = buildRipResponseDatagram();
+      Ethernet responseEthernet = buildRipResponseFrame(responseUdp, inIface);
+      sendPacket(responseEthernet, inIface);
     }
 
     // Response
     if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
+      System.out.println("Handle RIP response");
       List<RIPv2Entry> ripEntries = ripPacket.getEntries();
       for (RIPv2Entry entry : ripEntries) {
         mergeRoute(entry, nextHopIp, inIface);
