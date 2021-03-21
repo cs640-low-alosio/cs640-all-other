@@ -151,7 +151,7 @@ public class Router extends Device implements Runnable {
     }
     System.out.println(response);
 
-    response.setCommand(COMMAND_REQUEST);
+    response.setCommand(COMMAND_RESPONSE);
     UDP responseUdp = new UDP();
     responseUdp.setPayload(response);
     responseUdp.setSourcePort(RIP_PORT);
