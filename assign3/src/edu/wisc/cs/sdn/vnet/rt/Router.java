@@ -1,12 +1,9 @@
 package edu.wisc.cs.sdn.vnet.rt;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
-import edu.wisc.cs.sdn.vnet.sw.MACTableEntry;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.RIPv2;
@@ -17,13 +14,8 @@ import net.floodlightcontroller.packet.UDP;
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
 public class Router extends Device implements Runnable {
-  public static final byte COMMAND_REQUEST = 1;
-  public static final byte COMMAND_RESPONSE = 2;
-  public static short RIP_PORT = (short) 520;
   public static String MULTICAST_RIP = "224.0.0.9";
   public static String BROADCAST_MAC = "FF:FF:FF:FF:FF:FF";
-  public static final short TYPE_IPv4 = 0x0800;
-  public static final byte PROTOCOL_UDP = 0x11;
   public static int UNSOLICITED_RESPONSE_INTERVAL = 10000;
 
   private Thread responseThread;
@@ -92,23 +84,23 @@ public class Router extends Device implements Runnable {
 
     // Initial RIPv2 request
     RIPv2 initRequestRip = new RIPv2();
-    initRequestRip.setCommand(COMMAND_REQUEST);
+    initRequestRip.setCommand(RIPv2.COMMAND_REQUEST);
     UDP initRequestUdp = new UDP();
     initRequestUdp.setPayload(initRequestRip);
-    initRequestUdp.setSourcePort(RIP_PORT);
-    initRequestUdp.setDestinationPort(RIP_PORT);
+    initRequestUdp.setSourcePort(UDP.RIP_PORT);
+    initRequestUdp.setDestinationPort(UDP.RIP_PORT);
     // Send out on each of this router's interfaces
     for (Iface iface : this.interfaces.values()) {
       IPv4 initRequestIPv4 = new IPv4();
       initRequestIPv4.setPayload(initRequestUdp);
       initRequestIPv4.setDestinationAddress(MULTICAST_RIP);
       initRequestIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
-      initRequestIPv4.setProtocol(PROTOCOL_UDP);
+      initRequestIPv4.setProtocol(IPv4.PROTOCOL_UDP);
       Ethernet initRequestEthernet = new Ethernet();
       initRequestEthernet.setPayload(initRequestIPv4);
       initRequestEthernet.setDestinationMACAddress(BROADCAST_MAC);
       initRequestEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
-      initRequestEthernet.setEtherType(TYPE_IPv4);
+      initRequestEthernet.setEtherType(Ethernet.TYPE_IPv4);
 
       sendPacket(initRequestEthernet, iface);
       System.out.println("*** -> Initial packet sent over iface: " + iface.getName()
@@ -151,23 +143,23 @@ public class Router extends Device implements Runnable {
     }
     System.out.println(response);
 
-    response.setCommand(COMMAND_RESPONSE);
+    response.setCommand(RIPv2.COMMAND_RESPONSE);
     UDP responseUdp = new UDP();
     responseUdp.setPayload(response);
-    responseUdp.setSourcePort(RIP_PORT);
-    responseUdp.setDestinationPort(RIP_PORT);
+    responseUdp.setSourcePort(UDP.RIP_PORT);
+    responseUdp.setDestinationPort(UDP.RIP_PORT);
     // Send out on each of this router's interfaces
     for (Iface iface : this.interfaces.values()) {
       IPv4 responseIPv4 = new IPv4();
       responseIPv4.setPayload(responseUdp);
       responseIPv4.setDestinationAddress(MULTICAST_RIP);
       responseIPv4.setSourceAddress(iface.getIpAddress()); // piazza@279
-      responseIPv4.setProtocol(PROTOCOL_UDP);
+      responseIPv4.setProtocol(IPv4.PROTOCOL_UDP);
       Ethernet responseEthernet = new Ethernet();
       responseEthernet.setPayload(responseIPv4);
       responseEthernet.setDestinationMACAddress(BROADCAST_MAC);
       responseEthernet.setSourceMACAddress(iface.getMacAddress().toBytes()); // piazza@279
-      responseEthernet.setEtherType(TYPE_IPv4);
+      responseEthernet.setEtherType(Ethernet.TYPE_IPv4);
 
       sendPacket(responseEthernet, iface);
       System.out.println("*** -> RIP response sent over iface: " + iface.getName()
@@ -206,16 +198,17 @@ public class Router extends Device implements Runnable {
 
     if (etherPacket.getEtherType() == Ethernet.TYPE_IPv4) {
       IPv4 ipPacket = (IPv4) etherPacket.getPayload();
-      if (ipPacket.getDestinationAddress() != IPv4.toIPv4Address(MULTICAST_RIP)) {
-        this.handleIpPacket(etherPacket, inIface);
-        return;
-      }
+      // Commented out after piazza@319
+//      if (ipPacket.getDestinationAddress() != IPv4.toIPv4Address(MULTICAST_RIP)) {
+//        this.handleIpPacket(etherPacket, inIface);
+//        return;
+//      }
       if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
         this.handleIpPacket(etherPacket, inIface);
         return;
       }
       UDP udpPacket = (UDP) ipPacket.getPayload();
-      if (udpPacket.getDestinationPort() != RIP_PORT) {
+      if ((udpPacket.getDestinationPort() != UDP.RIP_PORT)|| (udpPacket.getSourcePort() != UDP.RIP_PORT)) {
         this.handleIpPacket(etherPacket, inIface);
         return;
       }
@@ -250,28 +243,30 @@ public class Router extends Device implements Runnable {
   }
 
   private void mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
-    int destIp = ripEntry.getAddress();
-    int subnetMask = ripEntry.getSubnetMask();
+    int newDestIp = ripEntry.getAddress();
+    int newSubnetMask = ripEntry.getSubnetMask();
     int newCost = ripEntry.getMetric() + 1;
-    if (newCost >= 16) {
-      newCost = 16;
-    }
     
     RouteEntry routeEntry;
-    if ((routeEntry = routeTable.lookup(destIp)) != null) {
+    if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
       if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
-        // route is uninteresting - just update TTL and ignore
-        if (routeEntry.getTtl() != -1) {
-          routeEntry.setTtl(RouteEntry.TTL_INIT_SECONDS);          
-        }
+        // route is uninteresting - just ignore
         return;
       }
       
       // update route entry with better route or metric for current next hop
-      routeTable.update(destIp, subnetMask, nextHopIp, inIface, RouteEntry.TTL_INIT_SECONDS, newCost);
+      if (newCost == 16) {
+        routeTable.remove(newDestIp, newSubnetMask);
+      } else {
+        routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, RouteEntry.TTL_INIT_SECONDS, newCost);        
+      }
     } else {
       // add new route table entry
-      routeTable.insert(destIp, nextHopIp, subnetMask, inIface, RouteEntry.TTL_INIT_SECONDS, newCost);
+      if (newCost == 16) {
+        return;
+      } else {        
+        routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SECONDS, newCost);
+      }
     }
     
   }
