@@ -134,7 +134,7 @@ public class Router extends Device implements Runnable {
         break;
       }
 
-      System.out.print("Sending unsolicited RIP response");
+      System.out.println("Sending unsolicited RIP response");
       sendRipReponse();
     }
   }
@@ -282,7 +282,7 @@ public class Router extends Device implements Runnable {
     int newDestIp = ripEntry.getAddress();
     int newSubnetMask = ripEntry.getSubnetMask();
     int newCost = ripEntry.getMetric() + 1;
-    if (newCost == 16) { // cost is infinite, so ignore
+    if (newCost >= 16) { // cost is infinite, so ignore
       return;
     }
 
@@ -295,12 +295,12 @@ public class Router extends Device implements Runnable {
 
       // update route entry with better route or metric for current next hop
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
-      System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
+      // System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
           newCost);
-      System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
+      // System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
     }
 
   }
