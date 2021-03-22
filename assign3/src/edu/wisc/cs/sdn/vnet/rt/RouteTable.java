@@ -352,7 +352,7 @@ public class RouteTable implements Runnable {
             continue;
           } else if (entry.getTtl() == 0) {
             this.entries.remove(entry);
-            System.out.println("Remove entry: " + entry);
+            System.out.println("\tRemove entry: " + entry);
           } else {
             entry.decrementTtl();
 //            System.out.println("Decrement routeEntry:" + entry);
