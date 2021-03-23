@@ -242,7 +242,7 @@ public class Router extends Device implements Runnable {
         int nextHopIp = ipPacket.getSourceAddress();
         handleRip(ripPacket, nextHopIp, inIface);
       }
-    } else { // use
+    } else { // otherwise, if not RIP router, do not handle RIP packets
       switch (etherPacket.getEtherType()) {
         case Ethernet.TYPE_IPv4:
           this.handleIpPacket(etherPacket, inIface);
@@ -282,7 +282,7 @@ public class Router extends Device implements Runnable {
     int newDestIp = ripEntry.getAddress();
     int newSubnetMask = ripEntry.getSubnetMask();
     int newCost = ripEntry.getMetric() + 1;
-    if (newCost >= 16) { // cost is infinite, so ignore
+    if (newCost >= 16) { // cost is infinite, so ignore piazza@327
       return;
     }
 
