@@ -265,49 +265,64 @@ public class Router extends Device implements Runnable {
 
     // Response
     if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
+      boolean isRouteTableUpdated = false;
+      
       System.out.println("Handle RIP response");
       List<RIPv2Entry> ripEntries = ripPacket.getEntries();
       for (RIPv2Entry entry : ripEntries) {
-        mergeRoute(entry, nextHopIp, inIface);
+        if (mergeRoute(entry, nextHopIp, inIface) == true) {
+          isRouteTableUpdated = true;
+        }
+      }
+      
+      // Perform a simplified triggered update response - piazza@356_f1
+      if (isRouteTableUpdated) {
+        broadcastUnsolicitedRipReponse();
       }
     }
+    
 
     System.out.println("Updated route table after handling RIP");
     System.out.println("-------------------------------------------------");
     System.out.print(this.routeTable.toString());
     System.out.println("-------------------------------------------------");
   }
-
-  private void mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
+  
+  /**
+   * Bellman-ford distributed algorithm (basic distance vector)
+   * 
+   * @param ripEntry
+   * @param nextHopIp
+   * @param inIface
+   * @return true if route table was updated, otherwise false
+   */
+  private boolean mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
     int newDestIp = ripEntry.getAddress();
     int newSubnetMask = ripEntry.getSubnetMask();
     int newCost = ripEntry.getMetric() + 1;
     if (newCost >= 16) { // cost is infinite, so ignore piazza@327
-      return;
+      return false;
     }
 
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
       if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
         // route is uninteresting - just ignore
-        return;
+        return false;
       }
 
       // update route entry with better route or metric for current next hop
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
       // System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
       
-      // Perform a simplified triggered response - piazza@356_f1
-      broadcastUnsolicitedRipReponse();
-
+      return true;
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
           newCost);
       // System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
       
-      // Perform a simplified triggered response - piazza@356_f1
-      broadcastUnsolicitedRipReponse();
+      return true;
     }
   }
 
