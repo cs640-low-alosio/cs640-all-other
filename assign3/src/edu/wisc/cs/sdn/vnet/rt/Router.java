@@ -134,7 +134,7 @@ public class Router extends Device implements Runnable {
         break;
       }
 
-      System.out.println("10 seconds have passed; Sending unsolicited RIP response");
+      System.out.println("*** -> 10 seconds have passed; Sending unsolicited RIP response");
       broadcastUnsolicitedRipReponse();
     }
   }
@@ -229,16 +229,19 @@ public class Router extends Device implements Runnable {
         // return;
         // }
         if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
+          // not a RIP packet, use normal IP packet handling
           this.handleIpPacket(etherPacket, inIface);
           return;
         }
         UDP udpPacket = (UDP) ipPacket.getPayload();
         if ((udpPacket.getDestinationPort() != UDP.RIP_PORT)
             || (udpPacket.getSourcePort() != UDP.RIP_PORT)) {
+          // not a RIP packet, use normal IP packet handling
           this.handleIpPacket(etherPacket, inIface);
           return;
         }
 
+        // this is a RIP packet, use RIP packet handling
         RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
         int nextHopIp = ipPacket.getSourceAddress();
         handleRip(ripPacket, nextHopIp, inIface);
@@ -257,7 +260,7 @@ public class Router extends Device implements Runnable {
   private void handleRip(RIPv2 ripPacket, int nextHopIp, Iface inIface) {
     // Request
     if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
-      System.out.println("Handle RIP request");
+      System.out.println("*** -> Handle RIP request:");
       // Send response only to requester piazza@322
       UDP responseUdp = buildRipResponseDatagram();
       Ethernet responseEthernet = buildRipResponseFrame(responseUdp, inIface);
@@ -268,7 +271,7 @@ public class Router extends Device implements Runnable {
     if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
       boolean isRouteTableUpdated = false;
 
-      System.out.println("Handle RIP response");
+      System.out.println("*** -> Handle RIP response:");
       List<RIPv2Entry> ripEntries = ripPacket.getEntries();
       for (RIPv2Entry entry : ripEntries) {
         if (mergeRoute(entry, nextHopIp, inIface) == true) {
@@ -278,14 +281,14 @@ public class Router extends Device implements Runnable {
 
       // Perform a simplified triggered update response - piazza@356_f1
       if (isRouteTableUpdated) {
-        System.out.println("Sending simplified triggered update RIP response");
+        System.out.println("\tSending simplified triggered update RIP response");
         broadcastUnsolicitedRipReponse();
-        System.out.println("Updated route table after handling RIP");
-        System.out.println("-------------------------------------------------");
-        System.out.print(this.routeTable.toString());
-        System.out.println("-------------------------------------------------");
+        System.out.println("\tUpdated route table after handling RIP");
+        System.out.println("\t-------------------------------------------------");
+        System.out.print(this.routeTable.toString().replace("\n", "\n\t"));
+        System.out.println("\t-------------------------------------------------");
       } else {
-        System.out.println("No updates required after handling RIP");
+        System.out.println("\tNo updates required after handling RIP");
       }
     }
 
