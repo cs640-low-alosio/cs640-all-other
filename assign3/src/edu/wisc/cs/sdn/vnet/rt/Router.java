@@ -134,7 +134,7 @@ public class Router extends Device implements Runnable {
         break;
       }
 
-      System.out.println("Sending unsolicited RIP response");
+      System.out.println("10 Seconds Have Passed: Sending unsolicited RIP response");
       broadcastUnsolicitedRipReponse();
     }
   }
@@ -266,7 +266,7 @@ public class Router extends Device implements Runnable {
     // Response
     if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
       boolean isRouteTableUpdated = false;
-      
+
       System.out.println("Handle RIP response");
       List<RIPv2Entry> ripEntries = ripPacket.getEntries();
       for (RIPv2Entry entry : ripEntries) {
@@ -274,9 +274,10 @@ public class Router extends Device implements Runnable {
           isRouteTableUpdated = true;
         }
       }
-      
+
       // Perform a simplified triggered update response - piazza@356_f1
       if (isRouteTableUpdated) {
+        System.out.println("Sending simplified triggered update RIP response");
         broadcastUnsolicitedRipReponse();
         System.out.println("Updated route table after handling RIP");
         System.out.println("-------------------------------------------------");
@@ -286,9 +287,9 @@ public class Router extends Device implements Runnable {
         System.out.println("No updates required after handling RIP");
       }
     }
-    
+
   }
-  
+
   /**
    * Bellman-ford distributed algorithm (basic distance vector)
    * 
@@ -311,24 +312,24 @@ public class Router extends Device implements Runnable {
         // route has higher cost - ignore
         return false;
       }
-      
+
       if ((newCost == routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress())) {
         // same route received - refresh the TTL
         routeEntry.setTtl(routeEntry.TTL_INIT_SEC);
         return false;
       }
-      
+
       // Otherwise, update route entry with better route or metric for current next hop
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
       System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
-      
+
       return true;
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
           newCost);
-       System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
-      
+      System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
+
       return true;
     }
   }
