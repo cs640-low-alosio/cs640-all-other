@@ -315,7 +315,7 @@ public class Router extends Device implements Runnable {
 
       if ((newCost == routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress())) {
         // same route received - refresh the TTL
-        routeEntry.setTtl(routeEntry.TTL_INIT_SEC);
+        routeEntry.setTtl(RouteEntry.TTL_INIT_SEC);
         return false;
       }
 
