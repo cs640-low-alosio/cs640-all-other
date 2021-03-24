@@ -217,7 +217,8 @@ public class Router extends Device implements Runnable {
    * @param inIface     the interface on which the packet was received
    */
   public void handlePacket(Ethernet etherPacket, Iface inIface) {
-    System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
+    // System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n",
+    // "\n\t"));
 
     if (isRipRouter) { // piazza@315 - only use RIP when configured for it
       if (etherPacket.getEtherType() == Ethernet.TYPE_IPv4) {
@@ -310,7 +311,7 @@ public class Router extends Device implements Runnable {
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
       if ((newCost < routeEntry.getCost()) // Update route entry with better cost
           // or new cost for current next hop
-          || ((newCost != routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress()))) {
+          || (newCost != routeEntry.getCost() && nextHopIp == routeEntry.getGatewayAddress())) {
         routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
         System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
         return true;
