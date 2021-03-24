@@ -278,14 +278,15 @@ public class Router extends Device implements Runnable {
       // Perform a simplified triggered update response - piazza@356_f1
       if (isRouteTableUpdated) {
         broadcastUnsolicitedRipReponse();
+        System.out.println("Updated route table after handling RIP");
+        System.out.println("-------------------------------------------------");
+        System.out.print(this.routeTable.toString());
+        System.out.println("-------------------------------------------------");
+      } else {
+        System.out.println("No updates required after handling RIP");
       }
     }
     
-
-    System.out.println("Updated route table after handling RIP");
-    System.out.println("-------------------------------------------------");
-    System.out.print(this.routeTable.toString());
-    System.out.println("-------------------------------------------------");
   }
   
   /**
@@ -313,14 +314,14 @@ public class Router extends Device implements Runnable {
 
       // update route entry with better route or metric for current next hop
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
-      // System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
+      System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
       
       return true;
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
           newCost);
-      // System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
+       System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
       
       return true;
     }
