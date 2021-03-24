@@ -307,12 +307,18 @@ public class Router extends Device implements Runnable {
 
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
-      if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
-        // route is uninteresting - just ignore
+      if (newCost > routeEntry.getCost()) {
+        // route has higher cost - ignore
         return false;
       }
-
-      // update route entry with better route or metric for current next hop
+      
+      if ((newCost == routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress())) {
+        // same route received - refresh the TTL
+        routeEntry.setTtl(routeEntry.TTL_INIT_SEC);
+        return false;
+      }
+      
+      // Otherwise, update route entry with better route or metric for current next hop
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
       System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
       
