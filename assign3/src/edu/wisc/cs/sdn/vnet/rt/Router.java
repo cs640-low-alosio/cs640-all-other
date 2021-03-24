@@ -308,9 +308,9 @@ public class Router extends Device implements Runnable {
 
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
-      if ((newCost < routeEntry.getCost())
+      if ((newCost < routeEntry.getCost()) // Update route entry with better cost
+          // or new cost for current next hop
           || ((newCost != routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress()))) {
-        // Update route entry with better route or new cost for current next hop
         routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
         System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
         return true;
