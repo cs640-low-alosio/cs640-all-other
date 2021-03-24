@@ -135,11 +135,11 @@ public class Router extends Device implements Runnable {
       }
 
       System.out.println("Sending unsolicited RIP response");
-      sendRipReponse();
+      broadcastUnsolicitedRipReponse();
     }
   }
 
-  private void sendRipReponse() {
+  private void broadcastUnsolicitedRipReponse() {
     // Send out unsolicited response
     UDP responseUdp = buildRipResponseDatagram();
 
@@ -296,13 +296,19 @@ public class Router extends Device implements Runnable {
       // update route entry with better route or metric for current next hop
       routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
       // System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
+      
+      // Perform a simplified triggered response - piazza@356_f1
+      broadcastUnsolicitedRipReponse();
+
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
           newCost);
       // System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
+      
+      // Perform a simplified triggered response - piazza@356_f1
+      broadcastUnsolicitedRipReponse();
     }
-
   }
 
   private void handleIpPacket(Ethernet etherPacket, Iface inIface) {
