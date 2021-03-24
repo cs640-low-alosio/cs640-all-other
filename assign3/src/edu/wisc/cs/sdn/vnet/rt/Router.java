@@ -285,8 +285,8 @@ public class Router extends Device implements Runnable {
         broadcastUnsolicitedRipReponse();
         System.out.println("\tUpdated route table after handling RIP");
         System.out.println("\t-------------------------------------------------");
-        System.out.print(this.routeTable.toString().replace("\n", "\n\t"));
-        System.out.println("\t-------------------------------------------------");
+        System.out.print("\t" + this.routeTable.toString().replace("\n", "\n\t"));
+        System.out.println("-------------------------------------------------");
       } else {
         System.out.println("\tNo updates required after handling RIP");
       }
