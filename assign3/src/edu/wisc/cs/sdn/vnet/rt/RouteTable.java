@@ -344,6 +344,7 @@ public class RouteTable implements Runnable {
       }
 
       // Timeout entries
+      boolean hasRemovedEntry = false;
       synchronized (this.entries) {
         List<Integer> destIpList = this.getDestIpList();
         for (Integer destIp : destIpList) {
@@ -352,12 +353,20 @@ public class RouteTable implements Runnable {
             continue;
           } else if (entry.getTtl() == 0) {
             this.entries.remove(entry);
-            System.out.println("Remove entry: " + entry);
+            System.out.println("\tRemove entry: " + entry);
+            hasRemovedEntry = true;
           } else {
             entry.decrementTtl();
 //            System.out.println("Decrement routeEntry:" + entry);
           }
         }
+      }
+      
+      if (hasRemovedEntry) {
+        System.out.println("Route table after removal/TTL expiration");
+        System.out.println("-------------------------------------------------");
+        System.out.print(this.toString());
+        System.out.println("-------------------------------------------------");
       }
     }
   }

@@ -134,12 +134,12 @@ public class Router extends Device implements Runnable {
         break;
       }
 
-      System.out.print("Sending unsolicited RIP response");
-      sendRipReponse();
+      System.out.println("*** -> 10 seconds have passed; Sending unsolicited RIP response");
+      broadcastUnsolicitedRipReponse();
     }
   }
 
-  private void sendRipReponse() {
+  private void broadcastUnsolicitedRipReponse() {
     // Send out unsolicited response
     UDP responseUdp = buildRipResponseDatagram();
 
@@ -217,7 +217,8 @@ public class Router extends Device implements Runnable {
    * @param inIface     the interface on which the packet was received
    */
   public void handlePacket(Ethernet etherPacket, Iface inIface) {
-    System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n", "\n\t"));
+    // System.out.println("*** -> Received packet: " + etherPacket.toString().replace("\n",
+    // "\n\t"));
 
     if (isRipRouter) { // piazza@315 - only use RIP when configured for it
       if (etherPacket.getEtherType() == Ethernet.TYPE_IPv4) {
@@ -228,21 +229,24 @@ public class Router extends Device implements Runnable {
         // return;
         // }
         if (ipPacket.getProtocol() != IPv4.PROTOCOL_UDP) {
+          // not a RIP packet, use normal IP packet handling
           this.handleIpPacket(etherPacket, inIface);
           return;
         }
         UDP udpPacket = (UDP) ipPacket.getPayload();
         if ((udpPacket.getDestinationPort() != UDP.RIP_PORT)
             || (udpPacket.getSourcePort() != UDP.RIP_PORT)) {
+          // not a RIP packet, use normal IP packet handling
           this.handleIpPacket(etherPacket, inIface);
           return;
         }
 
+        // this is a RIP packet, use RIP packet handling
         RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
         int nextHopIp = ipPacket.getSourceAddress();
         handleRip(ripPacket, nextHopIp, inIface);
       }
-    } else { // use
+    } else { // otherwise, if not RIP router, do not handle RIP packets
       switch (etherPacket.getEtherType()) {
         case Ethernet.TYPE_IPv4:
           this.handleIpPacket(etherPacket, inIface);
@@ -256,7 +260,7 @@ public class Router extends Device implements Runnable {
   private void handleRip(RIPv2 ripPacket, int nextHopIp, Iface inIface) {
     // Request
     if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
-      System.out.println("Handle RIP request");
+      System.out.println("*** -> Handle RIP request:");
       // Send response only to requester piazza@322
       UDP responseUdp = buildRipResponseDatagram();
       Ethernet responseEthernet = buildRipResponseFrame(responseUdp, inIface);
@@ -265,42 +269,71 @@ public class Router extends Device implements Runnable {
 
     // Response
     if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
-      System.out.println("Handle RIP response");
+      boolean isRouteTableUpdated = false;
+
+      System.out.println("*** -> Handle RIP response:");
       List<RIPv2Entry> ripEntries = ripPacket.getEntries();
       for (RIPv2Entry entry : ripEntries) {
-        mergeRoute(entry, nextHopIp, inIface);
+        if (mergeRoute(entry, nextHopIp, inIface) == true) {
+          isRouteTableUpdated = true;
+        }
+      }
+
+      // Perform a simplified triggered update response - piazza@356_f1
+      if (isRouteTableUpdated) {
+        System.out.println("\t-> Send simplified triggered update");
+        broadcastUnsolicitedRipReponse();
+        System.out.println("\tUpdated route table after handling RIP");
+        System.out.println("\t-------------------------------------------------");
+        System.out.print("\t" + this.routeTable.toString().replace("\n", "\n\t"));
+        System.out.println("-------------------------------------------------");
+      } else {
+        System.out.println("\t-> No updates required");
       }
     }
 
-    System.out.println("Updated route table after handling RIP");
-    System.out.println("-------------------------------------------------");
-    System.out.print(this.routeTable.toString());
-    System.out.println("-------------------------------------------------");
   }
 
-  private void mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
+  /**
+   * Bellman-ford distributed algorithm (basic distance vector)
+   * 
+   * @param ripEntry
+   * @param nextHopIp
+   * @param inIface
+   * @return true if route table was updated, otherwise false
+   */
+  private boolean mergeRoute(RIPv2Entry ripEntry, int nextHopIp, Iface inIface) {
     int newDestIp = ripEntry.getAddress();
     int newSubnetMask = ripEntry.getSubnetMask();
     int newCost = ripEntry.getMetric() + 1;
-    if (newCost == 16) { // cost is infinite, so ignore
-      return;
+    if (newCost >= 16) { // cost is infinite, so ignore piazza@327
+      return false;
     }
 
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
-      if ((newCost >= routeEntry.getCost()) && (nextHopIp != routeEntry.getGatewayAddress())) {
-        // route is uninteresting - just ignore
-        return;
-      }
+      if ((newCost < routeEntry.getCost()) // Update route entry with better cost
+          // or new cost for current next hop
+          || (newCost != routeEntry.getCost() && nextHopIp == routeEntry.getGatewayAddress())) {
+        routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
+        System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
+        return true;
+      } else {
+        if ((newCost == routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress())) {
+          // same route and cost received - refresh the TTL
+          routeEntry.setTtl(RouteEntry.TTL_INIT_SEC);
+        }
 
-      // update route entry with better route or metric for current next hop
-      routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
+        return false;
+      }
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
           newCost);
-    }
+      System.out.println("\tInsert rt entry: " + routeTable.lookup(newDestIp));
 
+      return true;
+    }
   }
 
   private void handleIpPacket(Ethernet etherPacket, Iface inIface) {
