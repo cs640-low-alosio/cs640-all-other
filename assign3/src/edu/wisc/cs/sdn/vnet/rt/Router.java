@@ -134,7 +134,7 @@ public class Router extends Device implements Runnable {
         break;
       }
 
-      System.out.println("10 Seconds Have Passed: Sending unsolicited RIP response");
+      System.out.println("10 seconds have passed; Sending unsolicited RIP response");
       broadcastUnsolicitedRipReponse();
     }
   }
@@ -308,22 +308,20 @@ public class Router extends Device implements Runnable {
 
     RouteEntry routeEntry;
     if ((routeEntry = routeTable.lookup(newDestIp)) != null) {
-      if (newCost > routeEntry.getCost()) {
-        // route has higher cost - ignore
+      if ((newCost < routeEntry.getCost())
+          || ((newCost != routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress()))) {
+        // Update route entry with better route or new cost for current next hop
+        routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
+        System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
+        return true;
+      } else {
+        if ((newCost == routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress())) {
+          // same route and cost received - refresh the TTL
+          routeEntry.setTtl(RouteEntry.TTL_INIT_SEC);
+        }
+
         return false;
       }
-
-      if ((newCost == routeEntry.getCost()) && (nextHopIp == routeEntry.getGatewayAddress())) {
-        // same route received - refresh the TTL
-        routeEntry.setTtl(RouteEntry.TTL_INIT_SEC);
-        return false;
-      }
-
-      // Otherwise, update route entry with better route or metric for current next hop
-      routeTable.update(newDestIp, newSubnetMask, nextHopIp, inIface, newCost);
-      System.out.println("\tUpdate rt entry: " + routeTable.lookup(newDestIp));
-
-      return true;
     } else {
       // add new route table entry
       routeTable.insert(newDestIp, nextHopIp, newSubnetMask, inIface, RouteEntry.TTL_INIT_SEC,
