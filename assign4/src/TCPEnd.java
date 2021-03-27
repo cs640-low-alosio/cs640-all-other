@@ -33,7 +33,7 @@ public class TCPEnd {
       
       if (receiverIp == null || receiverPort == -1 || senderSourcePort == -1) {
         System.out.println(
-            "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> –f <file name> -m <mtu> -c <sws>");
+            "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
       }
       
       DatagramSocket senderSocket = new DatagramSocket(senderSourcePort);
@@ -71,7 +71,7 @@ public class TCPEnd {
       
     } else {
       System.out.println(
-          "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> –f <file name> -m <mtu> -c <sws>");
+          "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
       System.out.println("Receiver: java TCPend -p <port> -m <mtu> -c <sws> -f <file name>");
     }
   }
