@@ -7,7 +7,8 @@ public class GoBackNPacket {
   protected int byteSequenceNum;
   protected int ackNum;
   protected long timestamp;
-  protected int length;
+  protected int totalLength;
+  protected int dataLength;
   protected boolean isSyn;
   protected boolean isAck;
   protected boolean isFin;
@@ -15,7 +16,10 @@ public class GoBackNPacket {
   protected byte[] data;
   
   public byte[] serialize() {
-    return null;
+    
+    byte[] data = new byte[this.totalLength];
+    
+    return data;
   }
   
   public GoBackNPacket deserialize(byte[] data) {
@@ -40,11 +44,11 @@ public class GoBackNPacket {
   public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
   }
-  public int getLength() {
-    return length;
+  public int getDataLength() {
+    return dataLength;
   }
-  public void setLength(int length) {
-    this.length = length;
+  public void setLength(int dataLength) {
+    this.dataLength = dataLength;
   }
   public boolean isSyn() {
     return isSyn;

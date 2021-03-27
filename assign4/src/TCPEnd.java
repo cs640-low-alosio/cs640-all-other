@@ -10,7 +10,7 @@ public class TCPEnd {
     InetAddress receiverIp = null;
     String filename;
     int mtu;
-    int sws;
+    int sws = -1;
 
 
     if (args.length == 12) {
@@ -31,15 +31,29 @@ public class TCPEnd {
         }
       }
       
-      if (receiverIp == null || receiverPort == -1 || senderSourcePort == -1) {
+      if (receiverIp == null || receiverPort == -1 || senderSourcePort == -1 || sws == -1) {
         System.out.println(
             "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
       }
       
       DatagramSocket senderSocket = new DatagramSocket(senderSourcePort);
-      byte[] bytes = new byte[5];
-      DatagramPacket packet = new DatagramPacket(bytes, 5, receiverIp, receiverPort);
-      senderSocket.send(packet);
+//      byte[] bytes = new byte[5];
+//      DatagramPacket packet = new DatagramPacket(bytes, 5, receiverIp, receiverPort);
+      GoBackNPacket syn1 = new GoBackNPacket();
+      syn1.setAck(true);
+      syn1.setByteSequenceNum(1);
+      byte[] data = syn1.serialize();
+      
+      for (int i = 0; i < data.length; i++) {
+        byte[] packetBytes = new byte[sws];
+        
+        for (int j = 0; j < sws; j++) {
+          packetBytes[j] = data[i];
+        }
+        
+        DatagramPacket packet = new DatagramPacket(packetBytes, sws, receiverIp, receiverPort);
+        senderSocket.send(packet);
+      }
       senderSocket.close();
       
     } else if (args.length == 8) {
@@ -67,7 +81,7 @@ public class TCPEnd {
       
       System.out.println(bytes);
       
-//      receiverSocket.close();
+      receiverSocket.close();
       
     } else {
       System.out.println(
