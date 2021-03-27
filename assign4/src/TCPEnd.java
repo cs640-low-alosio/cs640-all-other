@@ -67,7 +67,7 @@ public class TCPEnd {
       
       System.out.println(bytes);
       
-      receiverSocket.close();
+//      receiverSocket.close();
       
     } else {
       System.out.println(
