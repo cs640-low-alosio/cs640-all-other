@@ -56,7 +56,40 @@ public class TCPEnd {
       DatagramPacket handshakeSynPacket =
           new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
       System.out.println("Sender first syn chk: " + handshakeSyn.getChecksum());
+      bsNumSender++;
       senderSocket.send(handshakeSynPacket);
+      
+      // Receive 2nd Syn+Ack Packet
+      byte[] hsSynAckBytes = new byte[mtu];
+      DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
+      senderSocket.receive(hsSynAckPacket);
+      hsSynAckBytes = hsSynAckPacket.getData();
+      GoBackNPacket hsSynAck = new GoBackNPacket();
+      hsSynAck.deserialize(hsSynAckBytes);
+      System.out.println("Sndr syn+ack chk: " + hsSynAck.getChecksum());
+      
+      // Verify checksum first syn packet
+      short origChk = hsSynAck.getChecksum();
+      hsSynAck.resetChecksum();
+      hsSynAck.serialize();
+      short calcChk = hsSynAck.getChecksum();
+      if (origChk != calcChk) {
+        System.out.println("Sender - Syn+Ack chk does not match!");
+      }
+      
+      // Send 3rd Ack Packet
+      GoBackNPacket hsAck = new GoBackNPacket();
+      hsAck.setSyn(true);
+      hsAck.setByteSequenceNum(bsNumSender);
+      hsAck.setTimestamp(System.nanoTime());
+      hsAck.setLength(0);
+      byte[] hsAckBytes = hsAck.serialize();
+
+      DatagramPacket hsAckUdp =
+          new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
+      System.out.println("Sndr - ack chk: " + hsAck.getChecksum());
+      bsNumSender++;
+      senderSocket.send(hsAckUdp);
 
       // syn1.setAck(true);
       // syn1.setByteSequenceNum(1);
@@ -110,7 +143,33 @@ public class TCPEnd {
       if (origChk != calcChk) {
         System.out.println("Rcvr - first syn chk does not match!");
       }
-
+      
+      // Send 2nd Syn+Ack Packet
+      GoBackNPacket hsSynAck = new GoBackNPacket(bsNumReceiver, 0, true, false, true, new byte[0], 0);
+      byte[] hsSynAckBytes = hsSynAck.serialize();
+      DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, handshakeSynPacket.getAddress(), handshakeSynPacket.getPort());
+      System.out.println("Rcvr - send syn+ack chk: " + handshakeSyn.getChecksum());
+      bsNumReceiver++;
+      receiverSocket.send(hsSynAckPacket);
+      
+      // Receive Ack Packet
+      byte[] hsAckBytes = new byte[mtu];
+      DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
+      receiverSocket.receive(hsAckUdp);
+      hsAckBytes = hsAckUdp.getData();
+      GoBackNPacket hsAck = new GoBackNPacket();
+      hsAck.deserialize(hsAckBytes);
+      System.out.println("Rcvr - ack chk: " + hsAck.getChecksum());
+      
+      // Verify checksum first syn packet
+      origChk = hsAck.getChecksum();
+      hsAck.resetChecksum();
+      hsAck.serialize();
+      calcChk = hsAck.getChecksum();
+      if (origChk != calcChk) {
+        System.out.println("Rcvr - ack chk does not match!");
+      }
+      
       receiverSocket.close();
     } else {
       System.out.println(
