@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * 
@@ -14,8 +15,8 @@ public class GoBackNPacket {
 //  protected int totalLength;
   protected int dataLength;
   protected boolean isSyn;
-  protected boolean isAck;
   protected boolean isFin;
+  protected boolean isAck;
   protected short checksum;
   protected byte[] payloadData;
   
@@ -30,7 +31,7 @@ public class GoBackNPacket {
     
     // Length and flags word
     int lengthAndFlags = 0b0;
-    lengthAndFlags = dataLength << 3;
+    lengthAndFlags = dataLength << 3; // add three bits for flags
     if (isSyn) {
       lengthAndFlags += (0b1 << 2);       
     }
@@ -42,7 +43,7 @@ public class GoBackNPacket {
     }
     bb.putInt(lengthAndFlags);
     
-    bb.putInt(0x0000);    
+    bb.putInt(0x0000); // don't calculate checksum yet 
     
     if (dataLength != 0) {
       bb.put(payloadData);
@@ -71,7 +72,32 @@ public class GoBackNPacket {
   }
   
   public GoBackNPacket deserialize(byte[] data) {
-    ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+    ByteBuffer bb = ByteBuffer.wrap(data);
+    
+    this.byteSequenceNum = bb.getInt();
+    this.ackNum = bb.getInt();
+    this.timestamp = bb.getLong();
+    // Length and Flags
+    int lengthAndFlags = bb.getInt();    
+    this.dataLength = lengthAndFlags >> 3; // remove three bits for flags
+    this.isSyn = false;
+    this.isAck = false;
+    this.isFin = false;
+    if (((lengthAndFlags >> 2) & 0b1) == 1) {
+      this.isSyn = true;
+    }
+    if (((lengthAndFlags >> 1) & 0b1) == 1) {
+      this.isFin = true;
+    }
+    if ((lengthAndFlags & 0b1) == 1) {
+      this.isAck = true;
+    }
+    bb.getShort(); // these should all be 0
+    this.checksum = bb.getShort();
+    
+    // See src/net.floodlightcontroller.packet/Data.java
+    this.payloadData = Arrays.copyOfRange(data, bb.position(), bb.limit() - bb.position());
+    
     return null;
   }
 
@@ -122,6 +148,9 @@ public class GoBackNPacket {
   }
   public void setChecksum(short checksum) {
     this.checksum = checksum;
+  }
+  public void resetChecksum() {
+    this.checksum = 0;
   }
   
   
