@@ -20,8 +20,25 @@ public class GoBackNPacket {
   protected short checksum;
   protected byte[] payloadData;
   
+  public GoBackNPacket() {
+    this.byteSequenceNum = 0;
+    this.ackNum = 0;
+    this.timestamp = System.nanoTime();
+    this.dataLength = 0;
+    this.isSyn = false;
+    this.isFin = false;
+    this.isAck = false;
+    this.checksum = 0;
+    this.payloadData = new byte[0];
+  }
+  
   public byte[] serialize() {
-    int totalLength =  payloadData.length + HEADER_LENGTH_BYTES;
+    int totalLength;
+    if (payloadData == null) {
+      totalLength = HEADER_LENGTH_BYTES;
+    } else {
+      totalLength =  payloadData.length + HEADER_LENGTH_BYTES;
+    }
     byte[] allSegmentData = new byte[totalLength];
     
     ByteBuffer bb = ByteBuffer.wrap(allSegmentData);
