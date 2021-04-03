@@ -45,6 +45,7 @@ public class TCPEnd {
       // byte[] bytes = new byte[5];
       // DatagramPacket packet = new DatagramPacket(bytes, 5, receiverIp, receiverPort);
       
+      // TODO: Retransmission of handshake (hopefully same implementation as data transfer) @395
       // Send First Syn Packet
       GoBackNPacket handshakeSyn = new GoBackNPacket();
       handshakeSyn.setSyn(true);
