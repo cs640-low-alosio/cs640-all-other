@@ -6,7 +6,7 @@ import java.util.Arrays;
  * @author Garrett
  *
  */
-public class GoBackNPacket {
+public class GBNSegment {
   static final int HEADER_LENGTH_BYTES = 24;
 
   protected int byteSequenceNum;
@@ -20,7 +20,7 @@ public class GoBackNPacket {
   protected byte[] payloadData;
   protected int dataLength;
 
-  public GoBackNPacket() {
+  public GBNSegment() {
     this.byteSequenceNum = 0;
     this.ackNum = 0;
     this.timestamp = System.nanoTime();
@@ -32,7 +32,7 @@ public class GoBackNPacket {
     this.dataLength = 0;
   }
 
-  public GoBackNPacket(int bsNum, int ackNum, boolean isSyn, boolean isFin, boolean isAck,
+  public GBNSegment(int bsNum, int ackNum, boolean isSyn, boolean isFin, boolean isAck,
       byte[] payloadData, int dataLength) {
     this.byteSequenceNum = bsNum;
     this.ackNum = ackNum;
@@ -43,6 +43,31 @@ public class GoBackNPacket {
     this.checksum = 0;
     this.payloadData = payloadData;
     this.dataLength = dataLength;
+  }
+  
+  /**
+   * Static factory methods
+   */
+  /**
+   * 
+   * @param bsNum
+   * @param payloadData
+   * @return
+   */
+  public static GBNSegment createDataSegment(int bsNum, int ackNum, byte[] payloadData) {
+    return new GBNSegment(bsNum, ackNum, true, false, false, payloadData, payloadData.length);
+  }
+  
+  public static GBNSegment createHandshakeSegment(int bsNum, HandshakeType type) {
+    if (type == HandshakeType.SYN) {
+      return new GBNSegment(bsNum, 0, true, false, false, new byte[0], 0); 
+    } else if (type == HandshakeType.SYNACK) {
+      return new GBNSegment(bsNum, 0, true, false, true, new byte[0], 0);
+    } else if (type == HandshakeType.ACK) {
+      return new GBNSegment(bsNum, 0, true, false, true, new byte[0], 0);      
+    } else {
+      return null;
+    }
   }
 
   public byte[] serialize() {
@@ -101,7 +126,7 @@ public class GoBackNPacket {
     return allSegmentData;
   }
 
-  public GoBackNPacket deserialize(byte[] data) {
+  public GBNSegment deserialize(byte[] data) {
     ByteBuffer bb = ByteBuffer.wrap(data);
 
     this.byteSequenceNum = bb.getInt();
