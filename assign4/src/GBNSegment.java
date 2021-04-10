@@ -127,7 +127,7 @@ public class GBNSegment {
 
     bb.putShort(22, this.checksum);
     
-    System.out.println(payloadData.length);
+    System.out.println("serialize(): " + payloadData.length);
 
     return allSegmentData;
   }
@@ -159,7 +159,7 @@ public class GBNSegment {
     // See src/net.floodlightcontroller.packet/Data.java
     this.payloadData = Arrays.copyOfRange(data, bb.position(), bb.limit() - bb.position());
     
-    System.out.println(payloadData.length);
+    System.out.println("deserialize(): " + payloadData.length);
 
     return null;
   }
