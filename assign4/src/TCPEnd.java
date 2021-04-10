@@ -133,6 +133,7 @@ public class TCPEnd {
             DatagramPacket dataPacket = new DatagramPacket(dataSegmentBytes,
                 dataSegmentBytes.length, receiverIp, receiverPort);
             senderSocket.send(dataPacket);
+            printOutputSend(dataSegment);
             lastByteSent += mtu;
             bsNumSender = lastByteSent; // these are currently redundant
           }
@@ -253,7 +254,7 @@ public class TCPEnd {
       try (OutputStream out = new FileOutputStream(filename, true)) {
         DataOutputStream outStream = new DataOutputStream(out);
 
-        boolean isOpen = false;
+        boolean isOpen = true;
         int nextByteExpected = 0;
         int lastByteReceived = 0; // currently redundant as long as discarding out-of-order pkt
         int lastByteRead = 0;
