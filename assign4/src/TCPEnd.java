@@ -13,17 +13,17 @@ import java.io.FileOutputStream;
 
 public class TCPEnd {
 
-  long INITIAL_TIMEOUT = 5000000000L; // initial timeout in nanoseconds
-  static DecimalFormat threePlaces = new DecimalFormat("0.000");
-  static int mtu = -1;
-  static int sws = -1;
+  static final long INITIAL_TIMEOUT = 5000000000L; // initial timeout in nanoseconds
+  static final DecimalFormat threePlaces = new DecimalFormat("0.000");
 
   public static void main(String[] args) throws IOException {
     int senderSourcePort = -1;
     int receiverPort = -1;
     InetAddress receiverIp = null;
     String filename = null;
-
+    int mtu = -1;
+    int sws = -1;
+    
     int bsNumSender = 0; // TODO: move to Sender class
     int sndNextByteExpected = 0;
     int bsNumReceiver = 0; // TODO: move to Receiver class
@@ -56,7 +56,8 @@ public class TCPEnd {
       // byte[] bytes = new byte[5];
       // DatagramPacket packet = new DatagramPacket(bytes, 5, receiverIp, receiverPort);
 
-      // TODO: Retransmission of handshake (hopefully same implementation as data transfer) @395
+      // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
+      // piazza@395
       // TODO: Check flags
       // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
       // Send First Syn Packet
@@ -119,10 +120,15 @@ public class TCPEnd {
 
         // fill up entire sendbuffer, which is currently = sws
         while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
-          System.out.println("TCPEnd Sender - byteReadCount: " + byteReadCount + " lastByteWritten: " + lastByteWritten);
+          System.out.println("TCPEnd Sender - byteReadCount: " + byteReadCount
+              + " lastByteWritten: " + lastByteWritten);
           lastByteWritten += byteReadCount;
 
           // send entire buffer (currently = sws)
+          // TODO: handle end of file better (it keeps sending on the last iteration even though the
+          // file is empty)
+          // TODO: implement buffer that is larger than sws
+          // TODO: discard packets due to incorrect checksum
           for (int j = 0; j < sws; j++) {
             // create and send one segment
             byte[] onePayload = new byte[mtu];
@@ -151,29 +157,14 @@ public class TCPEnd {
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             lastByteAcked = ack.getAckNum() - 1;
 
-            // retransmit (timeout or three duplicate acks)
+            // TODO: retransmit (timeout)
+            // TODO: retransmit (three duplicate acks)
+
+            // TODO: Nagle's algorithm?
           }
 
           // remove from buffer
         }
-        // while (((byteReadCount = inputStream.read(onePayloadData, lastByteWritten, mtu)) != -1)
-        // && (lastByteWritten - lastByteAcked <= maxSenderBuffer)) {
-        // sendBuffer.add(onePayloadData);
-        // lastByteWritten += byteReadCount;
-        // }
-        // do {
-        // // Write to Send Buffer "Application" Code
-        // while (((byteReadCount = inputStream.read(onePayloadData, lastByteWritten, mtu)) != -1)
-        // && (lastByteWritten - lastByteAcked <= maxSenderBuffer)) {
-        // sendBuffer.add(onePayloadData);
-        // lastByteWritten += byteReadCount;
-        // }
-        //
-        // effectiveWindow = advertisedWindow - (lastByteSent - lastByteAcked);
-        //
-        // // Nagle's Algorithm
-        //
-        // } while (sendBuffer.size() > 0);
       }
 
       senderSocket.close();
@@ -270,7 +261,8 @@ public class TCPEnd {
           // TODO: discard out-of-order packets (and send duplicate ack)
 
           // reconstruct file
-          System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: " + data.getDataLength());
+          System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: "
+              + data.getDataLength());
           outStream.write(data.getPayload());
 
           // send ack
