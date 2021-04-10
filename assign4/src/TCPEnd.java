@@ -119,7 +119,7 @@ public class TCPEnd {
 
         // fill up entire sendbuffer, which is currently = sws
         while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
-          System.out.println("TCPEnd Sender - byteReadCount: " + byteReadCount + "lastByteWritten: " + lastByteWritten);
+          System.out.println("TCPEnd Sender - byteReadCount: " + byteReadCount + " lastByteWritten: " + lastByteWritten);
           lastByteWritten += byteReadCount;
 
           // send entire buffer (currently = sws)
@@ -269,6 +269,7 @@ public class TCPEnd {
           // TODO: discard out-of-order packets (and send duplicate ack)
 
           // reconstruct file
+          System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: " + data.getDataLength());
           outStream.write(data.getPayload());
 
           // send ack
