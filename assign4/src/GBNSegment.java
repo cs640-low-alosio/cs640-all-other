@@ -55,7 +55,7 @@ public class GBNSegment {
    * @return
    */
   public static GBNSegment createDataSegment(int bsNum, int ackNum, byte[] payloadData) {
-    return new GBNSegment(bsNum, ackNum, true, false, false, payloadData, payloadData.length);
+    return new GBNSegment(bsNum, ackNum, false, false, true, payloadData, payloadData.length);
   }
   
   public static GBNSegment createHandshakeSegment(int bsNum, HandshakeType type) {
@@ -68,6 +68,10 @@ public class GBNSegment {
     } else {
       return null;
     }
+  }
+  
+  public static GBNSegment createAckSegment(int bsNum, int ackNum) {
+    return new GBNSegment(bsNum, ackNum, false, false, true, new byte[0], 0);
   }
 
   public byte[] serialize() {
@@ -223,6 +227,9 @@ public class GBNSegment {
   public void resetChecksum() {
     this.checksum = 0;
   }
-
+  
+  public byte[] getPayload() {
+    return this.payloadData;
+  }
 
 }
