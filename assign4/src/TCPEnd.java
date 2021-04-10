@@ -309,7 +309,7 @@ public class TCPEnd {
     segment.serialize();
     short calcChk = segment.getChecksum();
     if (origChk != calcChk) {
-      System.out.println("Rcvr - chk does not match!");
+      System.out.println("Error: Checksum does not match!");
     }
 
     double currTime = System.nanoTime() / 1000000000;
