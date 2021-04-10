@@ -297,8 +297,8 @@ public class TCPEnd {
 
   public static GBNSegment handlePacket(DatagramSocket rcvSocket) throws IOException {
     // Receive First Syn Packet
-    byte[] bytes = new byte[mtu];
-    DatagramPacket packet = new DatagramPacket(bytes, mtu);
+    byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
+    DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
     rcvSocket.receive(packet);
     bytes = packet.getData();
     System.out.println("handlePacket(): bytes.length: " + bytes.length);
