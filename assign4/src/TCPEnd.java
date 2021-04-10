@@ -118,7 +118,8 @@ public class TCPEnd {
         int byteReadCount;
 
         // fill up entire sendbuffer, which is currently = sws
-        while ((byteReadCount = inputStream.read(sendBuffer, lastByteWritten, mtu * sws)) != -1) {
+        while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
+          System.out.println("TCPEnd Sender - byteReadCount: " + byteReadCount);
           lastByteWritten += byteReadCount;
 
           // send entire buffer (currently = sws)
