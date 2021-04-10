@@ -276,7 +276,7 @@ public class TCPEnd {
           GBNSegment ackSegment = GBNSegment.createAckSegment(bsNumReceiver, nextByteExpected);
           byte[] ackBytes = ackSegment.serialize();
           DatagramPacket ackPacket =
-              new DatagramPacket(ackBytes, 0, tcpSenderIpAddress, tcpSenderPort);
+              new DatagramPacket(ackBytes, ackBytes.length, tcpSenderIpAddress, tcpSenderPort);
           printOutputSend(ackSegment);
           receiverSocket.send(ackPacket);
         }
@@ -307,16 +307,16 @@ public class TCPEnd {
     segment.serialize();
     short calcChk = segment.getChecksum();
     if (origChk != calcChk) {
-      System.out.println("Rcvr - first syn chk does not match!");
+      System.out.println("Rcvr - chk does not match!");
     }
 
     double currTime = System.nanoTime() / 1000000000;
 
     System.out.print("rcv " + threePlaces.format(currTime));
-    System.out.print(segment.isSyn ? " -" : " S");
-    System.out.print(segment.isAck ? " -" : " A");
-    System.out.print(segment.isFin ? " -" : " F");
-    System.out.print((segment.getDataLength() > 0) ? " -" : " D");
+    System.out.print(segment.isSyn ? " S" : " -");
+    System.out.print(segment.isAck ? " A" : " -");
+    System.out.print(segment.isFin ? " F" : " -");
+    System.out.print((segment.getDataLength() > 0) ? " D" : " -");
     System.out.print(" " + segment.byteSequenceNum);
     System.out.print(" " + segment.getDataLength());
     System.out.print(" " + segment.ackNum);
@@ -329,10 +329,10 @@ public class TCPEnd {
     double currTime = System.nanoTime() / 1000000000;
 
     System.out.print("snd " + threePlaces.format(currTime));
-    System.out.print(segment.isSyn ? " -" : " S");
-    System.out.print(segment.isAck ? " -" : " A");
-    System.out.print(segment.isFin ? " -" : " F");
-    System.out.print((segment.getDataLength() > 0) ? " -" : " D");
+    System.out.print(segment.isSyn ? " S" : " -");
+    System.out.print(segment.isAck ? " A" : " -");
+    System.out.print(segment.isFin ? " F" : " -");
+    System.out.print((segment.getDataLength() > 0) ? " D" : " -");
     System.out.print(" " + segment.byteSequenceNum);
     System.out.print(" " + segment.getDataLength());
     System.out.print(" " + segment.ackNum);
