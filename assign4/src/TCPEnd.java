@@ -133,6 +133,7 @@ public class TCPEnd {
             byte[] dataSegmentBytes = dataSegment.serialize();
             DatagramPacket dataPacket = new DatagramPacket(dataSegmentBytes,
                 dataSegmentBytes.length, receiverIp, receiverPort);
+            System.out.println("TCPEndSender - dataPacket datalen: " + dataPacket.getLength());
             senderSocket.send(dataPacket);
             printOutputSend(dataSegment);
             lastByteSent += mtu;
@@ -300,6 +301,7 @@ public class TCPEnd {
     DatagramPacket packet = new DatagramPacket(bytes, mtu);
     rcvSocket.receive(packet);
     bytes = packet.getData();
+    System.out.println("handlePacket(): bytes.length: " + bytes.length);
     GBNSegment segment = new GBNSegment();
     segment.deserialize(bytes);
 

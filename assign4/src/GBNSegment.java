@@ -127,7 +127,7 @@ public class GBNSegment {
 
     bb.putShort(22, this.checksum);
     
-    System.out.println("serialize(): " + payloadData.length);
+//    System.out.println("serialize(): " + payloadData.length);
 
     return allSegmentData;
   }
