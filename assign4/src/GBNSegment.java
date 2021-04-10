@@ -134,6 +134,7 @@ public class GBNSegment {
 
   public GBNSegment deserialize(byte[] data) {
     ByteBuffer bb = ByteBuffer.wrap(data);
+    System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit());
 
     this.byteSequenceNum = bb.getInt();
     this.ackNum = bb.getInt();
