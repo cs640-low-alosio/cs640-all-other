@@ -159,7 +159,7 @@ public class GBNSegment {
 
     // See src/net.floodlightcontroller.packet/Data.java
     System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit() + ", dataLen: " + this.dataLength);
-    this.payloadData = Arrays.copyOfRange(data, bb.position(), bb.limit() - bb.position());
+    this.payloadData = Arrays.copyOfRange(data, bb.position(), bb.limit());
     
     System.out.println("deserialize(): " + payloadData.length);
 
