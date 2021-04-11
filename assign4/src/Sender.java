@@ -83,7 +83,7 @@ public class Sender extends TCPEndHost {
       int lastByteSent = 0;
       int lastByteAcked = 0; // TODO: or could be 1 after SYN
       int lastByteWritten = 0;
-      int oldLastByteWritten = 0;
+      int tempLastByteWritten = 0;
       int effectiveWindow = 0;
       int advertisedWindow = sws;
       // int maxSenderBuffer = sws * 10; // TODO: right now, buffer = sws
@@ -91,26 +91,37 @@ public class Sender extends TCPEndHost {
 
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
-        oldLastByteWritten = lastByteWritten;
+        lastByteWritten += byteReadCount;
         // send entire buffer (currently = sws)
         // TODO: handle end of file better (it keeps sending on the last iteration even though the
         // file is empty)
         // TODO: implement buffer that is larger than sws
         // TODO: discard packets due to incorrect checksum
-        for (int j = 0; j < sws; j++) {
+        for (int j = 0; j < (byteReadCount / mtu) + 1 ; j++) {
           byte[] onePayload;
-          int lastPayloadLength = byteReadCount % mtu;
-          if (lastPayloadLength != 0) {
-            onePayload = new byte[lastPayloadLength];
-            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);
-            lastByteWritten += lastPayloadLength;
-          } else if (lastByteWritten == oldLastByteWritten + byteReadCount) {
-            break;
-          } else {
+//          int lastPayloadLength = byteReadCount % mtu;
+//          int payloadLength = (byteReadCount - ((j - 1) * mtu)) % mtu;
+          if (j == byteReadCount / mtu) {
+            int lastPayloadLength = byteReadCount % mtu;
+            if (lastPayloadLength != 0) {
+              onePayload = new byte[lastPayloadLength];
+              onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);  
+            } else {
+              break;
+            }
+          }
+//          if (lastPayloadLength != 0) {
+//            onePayload = new byte[lastPayloadLength];
+//            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);
+////            lastByteWritten += lastPayloadLength;
+//          } else if (payloadLength == 0) {
+//            break;
+//          } else {
             onePayload = new byte[mtu];
             onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j + 1) * mtu);
-            lastByteWritten += mtu;
-          }
+//            lastByteWritten += mtu;
+//            byteReadCount = byteReadCount - mtu;
+//          }
 
           GBNSegment dataSegment =
               GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);

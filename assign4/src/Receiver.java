@@ -105,7 +105,7 @@ public class Receiver extends TCPEndHost{
         byte[] ackBytes = ackSegment.serialize();
         DatagramPacket ackPacket =
             new DatagramPacket(ackBytes, ackBytes.length, senderIp, senderPort);
-        printOutput(ackSegment, false);
+        printOutput(ackSegment, true);
         socket.send(ackPacket);
       }
     } catch (Exception e) {
