@@ -167,7 +167,7 @@ public class Sender extends TCPEndHost {
     // The main thing to recognize about connection teardown is that a connection in the TIME_WAIT
     // state cannot move to the CLOSED state until it has waited for two times the maximum amount of
     // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this is
-    // that, while the local side of the connection has sent an ACK in response to the other side’s
+    // that, while the local side of the connection has sent an ACK in response to the other side's
     // FIN segment, it does not know that the ACK was successfully delivered. As a consequence, the
     // other side might retransmit its FIN segment, and this second FIN segment might be delayed in
     // the network. If the connection were allowed to move directly to the CLOSED state, then
