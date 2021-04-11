@@ -146,7 +146,7 @@ public class Sender extends TCPEndHost {
   public void closeConnection() {
     // Send FIN
     // TODO: retransmit fin
-    GBNSegment finSegment = GBNSegment.createHandshakeSegment(bsn, HandshakeType.FIN);
+    GBNSegment finSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
     sendPacket(finSegment, receiverIp, receiverPort);
     bsn++;
 
@@ -159,8 +159,9 @@ public class Sender extends TCPEndHost {
     if (!(returnFinSegment.isFin && returnFinSegment.isAck) || returnFinSegment.isSyn) {
       System.out.println("Error: Snd - unexpected flags!");
     }
+    nextByteExpected++;
 
-    GBNSegment lastAckSegment = GBNSegment.createHandshakeSegment(bsn, HandshakeType.ACK);
+    GBNSegment lastAckSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
     sendPacket(lastAckSegment, receiverIp, receiverPort);
 
     // TODO: wait timeout to close connection (see lecture/book)

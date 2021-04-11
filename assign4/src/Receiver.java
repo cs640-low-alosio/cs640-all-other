@@ -44,7 +44,7 @@ public class Receiver extends TCPEndHost {
       senderPort = handshakeSynPacket.getPort();
 
       // Send 2nd Syn+Ack Packet
-      GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYNACK);
+      GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
       byte[] hsSynAckBytes = hsSynAck.serialize();
       DatagramPacket hsSynAckPacket =
           new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
@@ -96,10 +96,13 @@ public class Receiver extends TCPEndHost {
             // TODO: retransmit ACK, FIN
             GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
             sendPacket(returnAckSegment, senderIp, senderPort);
-            GBNSegment returnFinSegment = GBNSegment.createHandshakeSegment(bsn, HandshakeType.FIN);
+            GBNSegment returnFinSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
             sendPacket(returnFinSegment, senderIp, senderPort);
             bsn++;
             GBNSegment lastAckSegment = handlePacket(socket);
+            if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
+              System.out.println("Error: Rcv - unexpected flags!");
+            }
             socket.close();
             break;
           }

@@ -58,17 +58,17 @@ public class GBNSegment {
     return new GBNSegment(bsNum, ackNum, false, false, true, payloadData, payloadData.length);
   }
 
-  public static GBNSegment createHandshakeSegment(int bsNum, HandshakeType type) {
+  public static GBNSegment createHandshakeSegment(int bsNum, int ackNum, HandshakeType type) {
     if (type == HandshakeType.SYN) {
-      return new GBNSegment(bsNum, 0, true, false, false, new byte[0], 0);
+      return new GBNSegment(bsNum, ackNum, true, false, false, new byte[0], 0);
     } else if (type == HandshakeType.SYNACK) {
-      return new GBNSegment(bsNum, 0, true, false, true, new byte[0], 0);
+      return new GBNSegment(bsNum, ackNum, true, false, true, new byte[0], 0);
     } else if (type == HandshakeType.ACK) {
-      return new GBNSegment(bsNum, 0, false, false, true, new byte[0], 0);
+      return new GBNSegment(bsNum, ackNum, false, false, true, new byte[0], 0);
     } else if (type == HandshakeType.FIN) {
-      return new GBNSegment(bsNum, 0, false, true, false, new byte[0], 0);
+      return new GBNSegment(bsNum, ackNum, false, true, false, new byte[0], 0);
     } else if (type == HandshakeType.FINACK) {
-      return new GBNSegment(bsNum, 0, false, true, true, new byte[0], 0);
+      return new GBNSegment(bsNum, ackNum, false, true, true, new byte[0], 0);
     } else {
       return null;
     }
