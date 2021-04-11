@@ -43,7 +43,6 @@ public class Receiver extends TCPEndHost{
     senderIp = handshakeSynPacket.getAddress();
     senderPort = handshakeSynPacket.getPort();
 
-
     // Send 2nd Syn+Ack Packet
     GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYNACK);
     byte[] hsSynAckBytes = hsSynAck.serialize();

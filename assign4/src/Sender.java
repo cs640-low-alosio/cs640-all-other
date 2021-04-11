@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.Arrays;
 
 public class Sender extends TCPEndHost {
@@ -29,6 +28,7 @@ public class Sender extends TCPEndHost {
     // TODO: Check flags
     // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
     // Send First Syn Packet
+    // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
     GBNSegment handshakeSyn = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYN);
     byte[] handshakeSynData = handshakeSyn.serialize();
     DatagramPacket handshakeSynPacket =
@@ -83,6 +83,7 @@ public class Sender extends TCPEndHost {
       int lastByteSent = 0;
       int lastByteAcked = 0; // TODO: or could be 1 after SYN
       int lastByteWritten = 0;
+      int oldLastByteWritten = 0;
       int effectiveWindow = 0;
       int advertisedWindow = sws;
       // int maxSenderBuffer = sws * 10; // TODO: right now, buffer = sws
@@ -90,19 +91,26 @@ public class Sender extends TCPEndHost {
 
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
-        System.out.println("TCPEnd Sender - byteReadCount: " + byteReadCount
-            + " lastByteWritten: " + lastByteWritten);
-        lastByteWritten += byteReadCount;
-
+        oldLastByteWritten = lastByteWritten;
         // send entire buffer (currently = sws)
         // TODO: handle end of file better (it keeps sending on the last iteration even though the
         // file is empty)
         // TODO: implement buffer that is larger than sws
         // TODO: discard packets due to incorrect checksum
         for (int j = 0; j < sws; j++) {
-          // create and send one segment
-          byte[] onePayload = new byte[mtu];
-          onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j + 1) * mtu);
+          byte[] onePayload;
+          int lastPayloadLength = byteReadCount % mtu;
+          if (lastPayloadLength != 0) {
+            onePayload = new byte[lastPayloadLength];
+            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);
+            lastByteWritten += lastPayloadLength;
+          } else if (lastByteWritten == oldLastByteWritten + byteReadCount) {
+            break;
+          } else {
+            onePayload = new byte[mtu];
+            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j + 1) * mtu);
+            lastByteWritten += mtu;
+          }
 
           GBNSegment dataSegment =
               GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
