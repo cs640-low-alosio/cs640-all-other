@@ -77,7 +77,7 @@ public class Receiver extends TCPEndHost {
   }
 
   public void receiveData() {
-    try (OutputStream out = new FileOutputStream(filename, true)) {
+    try (OutputStream out = new FileOutputStream(filename)) {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
@@ -85,20 +85,20 @@ public class Receiver extends TCPEndHost {
       int lastByteReceived = 0; // currently redundant as long as discarding out-of-order pkt
       int lastByteRead = 0;
       while (isOpen) {
-        // receive data
+        // Receive data
         GBNSegment data = handlePacket(socket);
         if (!data.isAck || data.getDataLength() <= 0) {
           // TODO: handle fin
-          // terminate connection and set isOpen to false
+          // Terminate connection and set isOpen to false
         }
         // TODO: discard out-of-order packets (and send duplicate ack)
 
-        // reconstruct file
+        // Reconstruct file
         // System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: "
         // + data.getDataLength());
         outStream.write(data.getPayload());
 
-        // send ack
+        // Send ack
         lastByteReceived += data.getDataLength();
         nextByteExpected = lastByteReceived + 1;
         GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
