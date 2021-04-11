@@ -30,7 +30,7 @@ public class Sender extends TCPEndHost {
       // TODO: Check flags
       // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
       // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
-      GBNSegment handshakeSyn = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYN);
+      GBNSegment handshakeSyn = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYN);
       byte[] handshakeSynData = handshakeSyn.serialize();
       DatagramPacket handshakeSynPacket =
           new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
@@ -58,7 +58,7 @@ public class Sender extends TCPEndHost {
       nextByteExpected = hsSynAck.byteSequenceNum + 1;
 
       // Send 3rd Ack Packet
-      GBNSegment hsAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.ACK);
+      GBNSegment hsAck = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
       byte[] hsAckBytes = hsAck.serialize();
       DatagramPacket hsAckUdp =
           new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
