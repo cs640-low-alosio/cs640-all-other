@@ -34,7 +34,6 @@ public class Sender extends TCPEndHost {
       byte[] handshakeSynData = handshakeSyn.serialize();
       DatagramPacket handshakeSynPacket =
           new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
-      // System.out.println("Handshake: Sender first syn chk: " + handshakeSyn.getChecksum());
       socket.send(handshakeSynPacket);
       bsn++;
 
@@ -45,8 +44,6 @@ public class Sender extends TCPEndHost {
       hsSynAckBytes = hsSynAckPacket.getData();
       GBNSegment hsSynAck = new GBNSegment();
       hsSynAck.deserialize(hsSynAckBytes);
-      // System.out.println("Handshake: Sndr syn+ack chk: " + hsSynAck.getChecksum());
-
       // Verify checksum Syn+Ack packet
       short origChk = hsSynAck.getChecksum();
       hsSynAck.resetChecksum();
@@ -65,7 +62,6 @@ public class Sender extends TCPEndHost {
       byte[] hsAckBytes = hsAck.serialize();
       DatagramPacket hsAckUdp =
           new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
-      // System.out.println("Handshake: Sndr - ack chk: " + hsAck.getChecksum());
       socket.send(hsAckUdp);
     } catch (IOException e) {
       e.printStackTrace();
@@ -115,7 +111,6 @@ public class Sender extends TCPEndHost {
           byte[] dataSegmentBytes = dataSegment.serialize();
           DatagramPacket dataPacket = new DatagramPacket(dataSegmentBytes, dataSegmentBytes.length,
               receiverIp, receiverPort);
-          // System.out.println("TCPEndSender - dataPacket datalen: " + dataPacket.getLength());
           socket.send(dataPacket);
           printOutput(dataSegment, true);
           lastByteSent += payloadLength;
@@ -141,12 +136,45 @@ public class Sender extends TCPEndHost {
 
         // remove from buffer
       }
-    }
-    catch (FileNotFoundException e) {
+    } catch (FileNotFoundException e) {
       e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public void closeConnection() {
+    // Send FIN
+    // TODO: retransmit fin
+    GBNSegment finSegment = GBNSegment.createHandshakeSegment(bsn, HandshakeType.FIN);
+    sendPacket(finSegment, receiverIp, receiverPort);
+    bsn++;
+
+    // Receive ACK, then FIN
+    GBNSegment returnAckSegment = handlePacket(socket);
+    if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
+      System.out.println("Error: Snd - unexpected flags!");
+    }
+    GBNSegment returnFinSegment = handlePacket(socket);
+    if (!(returnFinSegment.isFin && returnFinSegment.isAck) || returnFinSegment.isSyn) {
+      System.out.println("Error: Snd - unexpected flags!");
+    }
+
+    GBNSegment lastAckSegment = GBNSegment.createHandshakeSegment(bsn, HandshakeType.ACK);
+    sendPacket(lastAckSegment, receiverIp, receiverPort);
+
+    // TODO: wait timeout to close connection (see lecture/book)
+    // The main thing to recognize about connection teardown is that a connection in the TIME_WAIT
+    // state cannot move to the CLOSED state until it has waited for two times the maximum amount of
+    // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this is
+    // that, while the local side of the connection has sent an ACK in response to the other side’s
+    // FIN segment, it does not know that the ACK was successfully delivered. As a consequence, the
+    // other side might retransmit its FIN segment, and this second FIN segment might be delayed in
+    // the network. If the connection were allowed to move directly to the CLOSED state, then
+    // another pair of application processes might come along and open the same connection (i.e.,
+    // use the same pair of port numbers), and the delayed FIN segment from the earlier incarnation
+    // of the connection would immediately initiate the termination of the later incarnation of that
+    // connection.
   }
 
 }

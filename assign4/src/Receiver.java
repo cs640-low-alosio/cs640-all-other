@@ -28,7 +28,6 @@ public class Receiver extends TCPEndHost {
       byte[] handshakeSynBytes = handshakeSynPacket.getData();
       GBNSegment handshakeSyn = new GBNSegment();
       handshakeSyn.deserialize(handshakeSynBytes);
-      // System.out.println("Rcvr first syn chk: " + handshakeSyn.getChecksum());
 
       // Verify checksum first syn packet
       short origChk = handshakeSyn.getChecksum();
@@ -49,7 +48,6 @@ public class Receiver extends TCPEndHost {
       byte[] hsSynAckBytes = hsSynAck.serialize();
       DatagramPacket hsSynAckPacket =
           new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
-      // System.out.println("Rcvr - send syn+ack chk: " + handshakeSyn.getChecksum());
       bsn++;
       socket.send(hsSynAckPacket);
 
@@ -60,7 +58,6 @@ public class Receiver extends TCPEndHost {
       hsAckBytes = hsAckUdp.getData();
       GBNSegment hsAck = new GBNSegment();
       hsAck.deserialize(hsAckBytes);
-      // System.out.println("Rcvr - ack chk: " + hsAck.getChecksum());
 
       // Verify checksum first syn packet
       origChk = hsAck.getChecksum();
@@ -80,7 +77,7 @@ public class Receiver extends TCPEndHost {
     }
   }
 
-  public void receiveData() {
+  public void receiveDataAndClose() {
     try (OutputStream out = new FileOutputStream(filename)) {
       DataOutputStream outStream = new DataOutputStream(out);
 
@@ -92,14 +89,24 @@ public class Receiver extends TCPEndHost {
         // Receive data
         GBNSegment data = handlePacket(socket);
         if (!data.isAck || data.getDataLength() <= 0) {
-          // TODO: handle fin
-          // Terminate connection and set isOpen to false
+          // Set isOpen to false
+          if (data.isFin) {
+            isOpen = false;
+            // Terminate connection
+            // TODO: retransmit ACK, FIN
+            GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+            sendPacket(returnAckSegment, senderIp, senderPort);
+            GBNSegment returnFinSegment = GBNSegment.createHandshakeSegment(bsn, HandshakeType.FIN);
+            sendPacket(returnFinSegment, senderIp, senderPort);
+            bsn++;
+            GBNSegment lastAckSegment = handlePacket(socket);
+            socket.close();
+            break;
+          }
         }
         // TODO: discard out-of-order packets (and send duplicate ack)
 
         // Reconstruct file
-        // System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: "
-        // + data.getDataLength());
         outStream.write(data.getPayload());
 
         // Send ack
@@ -113,8 +120,8 @@ public class Receiver extends TCPEndHost {
         socket.send(ackPacket);
       }
     } catch (Exception e) {
-      // TODO: handle exception
-    }
+      e.printStackTrace();
+    }    
   }
 
 }

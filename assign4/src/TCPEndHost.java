@@ -75,7 +75,7 @@ public class TCPEndHost {
   }
 
   public GBNSegment handlePacket(DatagramSocket rcvSocket) {
-    // Receive First Syn Packet
+    // Receive packet
     byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
     DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
     try {
@@ -84,11 +84,10 @@ public class TCPEndHost {
       e.printStackTrace();
     }
     bytes = packet.getData();
-    // System.out.println("handlePacket(): bytes.length: " + bytes.length);
     GBNSegment segment = new GBNSegment();
     segment = segment.deserialize(bytes);
 
-    // Verify checksum first syn packet
+    // Verify checksum
     short origChk = segment.getChecksum();
     segment.resetChecksum();
     segment.serialize();
@@ -117,5 +116,16 @@ public class TCPEndHost {
     System.out.print(" " + segment.getDataLength());
     System.out.print(" " + segment.ackNum);
     System.out.println();
+  }
+  
+  public void sendPacket(GBNSegment segment, InetAddress destIp, int destPort) {
+    byte[] segmentBytes = segment.serialize();
+    DatagramPacket packet = new DatagramPacket(segmentBytes, segmentBytes.length, destIp, destPort);
+    try {
+      socket.send(packet);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    printOutput(segment, true);
   }
 }

@@ -1,4 +1,4 @@
 
 public enum HandshakeType {
-  SYN, SYNACK, ACK
+  SYN, SYNACK, ACK, FIN, FINACK
 }

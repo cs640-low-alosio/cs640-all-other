@@ -65,6 +65,10 @@ public class GBNSegment {
       return new GBNSegment(bsNum, 0, true, false, true, new byte[0], 0);
     } else if (type == HandshakeType.ACK) {
       return new GBNSegment(bsNum, 0, false, false, true, new byte[0], 0);
+    } else if (type == HandshakeType.FIN) {
+      return new GBNSegment(bsNum, 0, false, true, false, new byte[0], 0);
+    } else if (type == HandshakeType.FINACK) {
+      return new GBNSegment(bsNum, 0, false, true, true, new byte[0], 0);
     } else {
       return null;
     }

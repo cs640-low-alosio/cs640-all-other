@@ -24,7 +24,7 @@ public class TCPEnd {
     int mtu = -1;
     int sws = -1;
 
-    if (args.length == 12) {
+    if (args.length == 12) { // TCPEnd sender mode
       for (int i = 0; i < args.length; i++) {
         String arg = args[i];
         if (arg.equals("-p")) {
@@ -51,8 +51,9 @@ public class TCPEnd {
       Sender sender = new Sender(senderSourcePort, receiverIp, receiverPort, filename, mtu, sws);
       sender.openConnection();
       sender.sendData();
+      sender.closeConnection();
       sender.socket.close();
-    } else if (args.length == 8) {
+    } else if (args.length == 8) { // TCPEnd receiver mode
       for (int i = 0; i < args.length; i++) {
         String arg = args[i];
         if (arg.equals("-p")) {
@@ -72,8 +73,7 @@ public class TCPEnd {
 
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
       receiver.openConnection();
-      receiver.receiveData();
-      receiver.socket.close();
+      receiver.receiveDataAndClose();
     } else {
       System.out.println(
           "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
