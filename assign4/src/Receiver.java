@@ -6,17 +6,17 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class Receiver extends TCPEndHost{
+public class Receiver extends TCPEndHost {
   protected InetAddress senderIp;
   protected int senderPort;
-  
+
   public Receiver(int receiverPort, String filename, int mtu, int sws) {
     this.receiverPort = receiverPort;
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
   }
-  
+
   public void openConnection() throws IOException {
     this.socket = new DatagramSocket(receiverPort);
 
@@ -27,7 +27,7 @@ public class Receiver extends TCPEndHost{
     byte[] handshakeSynBytes = handshakeSynPacket.getData();
     GBNSegment handshakeSyn = new GBNSegment();
     handshakeSyn.deserialize(handshakeSynBytes);
-    System.out.println("Rcvr first syn chk: " + handshakeSyn.getChecksum());
+    // System.out.println("Rcvr first syn chk: " + handshakeSyn.getChecksum());
 
     // Verify checksum first syn packet
     short origChk = handshakeSyn.getChecksum();
@@ -46,9 +46,9 @@ public class Receiver extends TCPEndHost{
     // Send 2nd Syn+Ack Packet
     GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYNACK);
     byte[] hsSynAckBytes = hsSynAck.serialize();
-    DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length,
-        senderIp, senderPort);
-    System.out.println("Rcvr - send syn+ack chk: " + handshakeSyn.getChecksum());
+    DatagramPacket hsSynAckPacket =
+        new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
+    // System.out.println("Rcvr - send syn+ack chk: " + handshakeSyn.getChecksum());
     bsn++;
     socket.send(hsSynAckPacket);
 
@@ -59,7 +59,7 @@ public class Receiver extends TCPEndHost{
     hsAckBytes = hsAckUdp.getData();
     GBNSegment hsAck = new GBNSegment();
     hsAck.deserialize(hsAckBytes);
-    System.out.println("Rcvr - ack chk: " + hsAck.getChecksum());
+    // System.out.println("Rcvr - ack chk: " + hsAck.getChecksum());
 
     // Verify checksum first syn packet
     origChk = hsAck.getChecksum();
@@ -75,7 +75,7 @@ public class Receiver extends TCPEndHost{
       System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
     }
   }
-  
+
   public void receiveData() {
     try (OutputStream out = new FileOutputStream(filename, true)) {
       DataOutputStream outStream = new DataOutputStream(out);
@@ -94,8 +94,8 @@ public class Receiver extends TCPEndHost{
         // TODO: discard out-of-order packets (and send duplicate ack)
 
         // reconstruct file
-        System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: "
-            + data.getDataLength());
+        // System.out.println("TCPEnd Rcvr - act len: " + data.getPayload().length + ", exp len: "
+        // + data.getDataLength());
         outStream.write(data.getPayload());
 
         // send ack

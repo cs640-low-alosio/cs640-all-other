@@ -44,7 +44,7 @@ public class GBNSegment {
     this.payloadData = payloadData;
     this.dataLength = dataLength;
   }
-  
+
   /**
    * Static factory methods
    */
@@ -57,19 +57,19 @@ public class GBNSegment {
   public static GBNSegment createDataSegment(int bsNum, int ackNum, byte[] payloadData) {
     return new GBNSegment(bsNum, ackNum, false, false, true, payloadData, payloadData.length);
   }
-  
+
   public static GBNSegment createHandshakeSegment(int bsNum, HandshakeType type) {
     if (type == HandshakeType.SYN) {
-      return new GBNSegment(bsNum, 0, true, false, false, new byte[0], 0); 
+      return new GBNSegment(bsNum, 0, true, false, false, new byte[0], 0);
     } else if (type == HandshakeType.SYNACK) {
       return new GBNSegment(bsNum, 0, true, false, true, new byte[0], 0);
     } else if (type == HandshakeType.ACK) {
-      return new GBNSegment(bsNum, 0, false, false, true, new byte[0], 0);      
+      return new GBNSegment(bsNum, 0, false, false, true, new byte[0], 0);
     } else {
       return null;
     }
   }
-  
+
   public static GBNSegment createAckSegment(int bsNum, int ackNum) {
     return new GBNSegment(bsNum, ackNum, false, false, true, new byte[0], 0);
   }
@@ -126,15 +126,16 @@ public class GBNSegment {
     this.checksum = (short) (~tempSum & 0xffff);
 
     bb.putShort(22, this.checksum);
-    
-//    System.out.println("serialize(): " + payloadData.length);
+
+    // System.out.println("serialize(): " + payloadData.length);
 
     return allSegmentData;
   }
 
   public GBNSegment deserialize(byte[] data) {
     ByteBuffer bb = ByteBuffer.wrap(data);
-//    System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit());
+    // System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " +
+    // bb.limit());
 
     this.byteSequenceNum = bb.getInt();
     this.ackNum = bb.getInt();
@@ -158,8 +159,8 @@ public class GBNSegment {
     this.checksum = bb.getShort();
 
     this.payloadData = Arrays.copyOfRange(data, bb.position(), dataLength + bb.position());
-    
-//    System.out.println("deserialize(): payloadData.length: " + payloadData.length);
+
+    // System.out.println("deserialize(): payloadData.length: " + payloadData.length);
 
     return this;
   }
@@ -231,7 +232,7 @@ public class GBNSegment {
   public void resetChecksum() {
     this.checksum = 0;
   }
-  
+
   public byte[] getPayload() {
     return this.payloadData;
   }

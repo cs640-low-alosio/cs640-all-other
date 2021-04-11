@@ -17,7 +17,7 @@ public class TCPEndHost {
   protected int bsn;
   protected int nextByteExpected;
   protected DatagramSocket socket;
-  
+
   public int getSenderSourcePort() {
     return senderSourcePort;
   }
@@ -80,7 +80,7 @@ public class TCPEndHost {
     DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
     rcvSocket.receive(packet);
     bytes = packet.getData();
-//    System.out.println("handlePacket(): bytes.length: " + bytes.length);
+    // System.out.println("handlePacket(): bytes.length: " + bytes.length);
     GBNSegment segment = new GBNSegment();
     segment = segment.deserialize(bytes);
 
@@ -98,7 +98,7 @@ public class TCPEndHost {
     return segment;
   }
 
-  public void printOutput(GBNSegment segment, boolean isSender) {  
+  public void printOutput(GBNSegment segment, boolean isSender) {
     if (isSender) {
       System.out.print("snd ");
     } else {

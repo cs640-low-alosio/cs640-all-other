@@ -9,7 +9,8 @@ import java.util.Arrays;
 
 public class Sender extends TCPEndHost {
 
-  public Sender(int senderSourcePort, InetAddress receiverIp, int receiverPort, String filename, int mtu, int sws) {
+  public Sender(int senderSourcePort, InetAddress receiverIp, int receiverPort, String filename,
+      int mtu, int sws) {
     this.senderSourcePort = senderSourcePort;
     this.receiverIp = receiverIp;
     this.receiverPort = receiverPort;
@@ -17,7 +18,7 @@ public class Sender extends TCPEndHost {
     this.mtu = mtu;
     this.sws = sws;
   }
-  
+
   public void openConnection() throws IOException {
     this.socket = new DatagramSocket(senderSourcePort);
 
@@ -31,7 +32,7 @@ public class Sender extends TCPEndHost {
     byte[] handshakeSynData = handshakeSyn.serialize();
     DatagramPacket handshakeSynPacket =
         new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
-    System.out.println("Handshake: Sender first syn chk: " + handshakeSyn.getChecksum());
+    // System.out.println("Handshake: Sender first syn chk: " + handshakeSyn.getChecksum());
     socket.send(handshakeSynPacket);
     bsn++;
 
@@ -42,7 +43,7 @@ public class Sender extends TCPEndHost {
     hsSynAckBytes = hsSynAckPacket.getData();
     GBNSegment hsSynAck = new GBNSegment();
     hsSynAck.deserialize(hsSynAckBytes);
-    System.out.println("Handshake: Sndr syn+ack chk: " + hsSynAck.getChecksum());
+    // System.out.println("Handshake: Sndr syn+ack chk: " + hsSynAck.getChecksum());
 
     // Verify checksum Syn+Ack packet
     short origChk = hsSynAck.getChecksum();
@@ -62,10 +63,10 @@ public class Sender extends TCPEndHost {
     byte[] hsAckBytes = hsAck.serialize();
     DatagramPacket hsAckUdp =
         new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
-    System.out.println("Handshake: Sndr - ack chk: " + hsAck.getChecksum());
+    // System.out.println("Handshake: Sndr - ack chk: " + hsAck.getChecksum());
     socket.send(hsAckUdp);
   }
-  
+
   public void sendData() throws IOException {
     // Data Transfer
     try (InputStream in = new FileInputStream(filename)) {
@@ -89,13 +90,13 @@ public class Sender extends TCPEndHost {
         // file is empty)
         // TODO: implement sws during retransmit
         // TODO: discard packets due to incorrect checksum
-        for (int j = 0; j < (byteReadCount / mtu) + 1 ; j++) {
+        for (int j = 0; j < (byteReadCount / mtu) + 1; j++) {
           byte[] onePayload;
           int payloadLength;
           if (j == byteReadCount / mtu) { // last payload
             payloadLength = byteReadCount % mtu;
             if (payloadLength != 0) {
-              payloadLength =  byteReadCount % mtu;  
+              payloadLength = byteReadCount % mtu;
             } else { // last payload is 0
               break;
             }
@@ -103,14 +104,13 @@ public class Sender extends TCPEndHost {
             payloadLength = mtu;
           }
           onePayload = new byte[payloadLength];
-          onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + payloadLength);            
+          onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + payloadLength);
 
-          GBNSegment dataSegment =
-              GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
+          GBNSegment dataSegment = GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
           byte[] dataSegmentBytes = dataSegment.serialize();
-          DatagramPacket dataPacket = new DatagramPacket(dataSegmentBytes,
-              dataSegmentBytes.length, receiverIp, receiverPort);
-          System.out.println("TCPEndSender - dataPacket datalen: " + dataPacket.getLength());
+          DatagramPacket dataPacket = new DatagramPacket(dataSegmentBytes, dataSegmentBytes.length,
+              receiverIp, receiverPort);
+          // System.out.println("TCPEndSender - dataPacket datalen: " + dataPacket.getLength());
           socket.send(dataPacket);
           printOutput(dataSegment, true);
           lastByteSent += payloadLength;
@@ -137,7 +137,7 @@ public class Sender extends TCPEndHost {
         // remove from buffer
       }
     }
-//
+    //
   }
 
 }
