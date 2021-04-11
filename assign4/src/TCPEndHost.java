@@ -80,9 +80,9 @@ public class TCPEndHost {
     DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
     rcvSocket.receive(packet);
     bytes = packet.getData();
-    System.out.println("handlePacket(): bytes.length: " + bytes.length);
+//    System.out.println("handlePacket(): bytes.length: " + bytes.length);
     GBNSegment segment = new GBNSegment();
-    segment.deserialize(bytes);
+    segment = segment.deserialize(bytes);
 
     // Verify checksum first syn packet
     short origChk = segment.getChecksum();

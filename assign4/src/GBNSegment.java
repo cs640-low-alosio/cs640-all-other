@@ -134,7 +134,7 @@ public class GBNSegment {
 
   public GBNSegment deserialize(byte[] data) {
     ByteBuffer bb = ByteBuffer.wrap(data);
-    System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit());
+//    System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit());
 
     this.byteSequenceNum = bb.getInt();
     this.ackNum = bb.getInt();
@@ -157,13 +157,11 @@ public class GBNSegment {
     bb.getShort(); // these should all be 0
     this.checksum = bb.getShort();
 
-    // See src/net.floodlightcontroller.packet/Data.java
-    System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit() + ", dataLen: " + this.dataLength);
     this.payloadData = Arrays.copyOfRange(data, bb.position(), dataLength + bb.position());
     
-    System.out.println("deserialize(): payloadData.length: " + payloadData.length);
+//    System.out.println("deserialize(): payloadData.length: " + payloadData.length);
 
-    return null;
+    return this;
   }
 
   public int getByteSequenceNum() {

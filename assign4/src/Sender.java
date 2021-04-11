@@ -20,14 +20,12 @@ public class Sender extends TCPEndHost {
   
   public void openConnection() throws IOException {
     this.socket = new DatagramSocket(senderSourcePort);
-    // byte[] bytes = new byte[5];
-    // DatagramPacket packet = new DatagramPacket(bytes, 5, receiverIp, receiverPort);
 
+    // Send First Syn Packet
     // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
     // piazza@395
     // TODO: Check flags
     // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
-    // Send First Syn Packet
     // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
     GBNSegment handshakeSyn = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYN);
     byte[] handshakeSynData = handshakeSyn.serialize();
@@ -71,42 +69,33 @@ public class Sender extends TCPEndHost {
   public void sendData() throws IOException {
     // Data Transfer
     try (InputStream in = new FileInputStream(filename)) {
-      // inputStream = new BufferedReader(new FileReader(filename), mtu);
       DataInputStream inputStream = new DataInputStream(in);
-
-      // ArrayList<byte[]> sendBuffer = new ArrayList<>();
       byte[] sendBuffer = new byte[mtu * sws]; // right now, buffer is the same size as the sws
-
-      // byte[] onePayloadData = new byte[mtu];
 
       // Initial filling up send buffer
       int lastByteSent = 0;
-      int lastByteAcked = 0; // TODO: or could be 1 after SYN
+      int lastByteAcked = 0;
       int lastByteWritten = 0;
       int tempLastByteWritten = 0;
       int effectiveWindow = 0;
       int advertisedWindow = sws;
-      // int maxSenderBuffer = sws * 10; // TODO: right now, buffer = sws
       int byteReadCount;
 
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
         lastByteWritten += byteReadCount;
-        // send entire buffer (currently = sws)
+        // Send entire buffer (currently = sws)
         // TODO: handle end of file better (it keeps sending on the last iteration even though the
         // file is empty)
-        // TODO: implement buffer that is larger than sws
+        // TODO: implement sws during retransmit
         // TODO: discard packets due to incorrect checksum
         for (int j = 0; j < (byteReadCount / mtu) + 1 ; j++) {
           byte[] onePayload;
-//          int lastPayloadLength = byteReadCount % mtu;
           int payloadLength;
           if (j == byteReadCount / mtu) { // last payload
             payloadLength = byteReadCount % mtu;
             if (payloadLength != 0) {
-              payloadLength =  byteReadCount % mtu;
-//              onePayload = new byte[lastPayloadLength];
-//              onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);  
+              payloadLength =  byteReadCount % mtu;  
             } else { // last payload is 0
               break;
             }
@@ -115,16 +104,6 @@ public class Sender extends TCPEndHost {
           }
           onePayload = new byte[payloadLength];
           onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + payloadLength);            
-//          if (lastPayloadLength != 0) {
-//            onePayload = new byte[lastPayloadLength];
-//            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);
-////            lastByteWritten += lastPayloadLength;
-//          } else if (payloadLength == 0) {
-//            break;
-//          } else {
-//            lastByteWritten += mtu;
-//            byteReadCount = byteReadCount - mtu;
-//          }
 
           GBNSegment dataSegment =
               GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
@@ -134,8 +113,8 @@ public class Sender extends TCPEndHost {
           System.out.println("TCPEndSender - dataPacket datalen: " + dataPacket.getLength());
           socket.send(dataPacket);
           printOutput(dataSegment, true);
-          lastByteSent += mtu;
-          bsn = lastByteSent; // these are currently redundant
+          lastByteSent += payloadLength;
+          bsn += payloadLength;
         }
 
         // wait for acks
