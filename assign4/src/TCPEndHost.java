@@ -4,21 +4,19 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 /**
- * 
- */
-
-/**
  * @author Garrett
  *
  */
 public class TCPEndHost {
-  private int senderSourcePort;
-  private int receiverPort;
-  private InetAddress receiverIp;
-  private String filename;
-  private int mtu;
-  private int sws;
-  private int bsn;
+  protected int senderSourcePort;
+  protected int receiverPort;
+  protected InetAddress receiverIp;
+  protected String filename;
+  protected int mtu;
+  protected int sws;
+  protected int bsn;
+  protected int nextByteExpected;
+  protected DatagramSocket socket;
   
   public int getSenderSourcePort() {
     return senderSourcePort;
