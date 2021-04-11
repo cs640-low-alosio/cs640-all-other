@@ -93,12 +93,16 @@ public class Receiver extends TCPEndHost {
           if (data.isFin) {
             isOpen = false;
             // Terminate connection
-            // TODO: retransmit ACK, FIN
+            // Send ACK
+            // TODO: retransmit ACK
             GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
             sendPacket(returnAckSegment, senderIp, senderPort);
+            // Send FIN
             GBNSegment returnFinSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
             sendPacket(returnFinSegment, senderIp, senderPort);
             bsn++;
+            
+            // Recieve last ACK
             GBNSegment lastAckSegment = handlePacket(socket);
             if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
               System.out.println("Error: Rcv - unexpected flags!");

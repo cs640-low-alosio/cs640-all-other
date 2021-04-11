@@ -150,17 +150,19 @@ public class Sender extends TCPEndHost {
     sendPacket(finSegment, receiverIp, receiverPort);
     bsn++;
 
-    // Receive ACK, then FIN
+    // Receive ACK
     GBNSegment returnAckSegment = handlePacket(socket);
     if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
       System.out.println("Error: Snd - unexpected flags!");
     }
+    // Receive FIN
     GBNSegment returnFinSegment = handlePacket(socket);
-    if (!(returnFinSegment.isFin && returnFinSegment.isAck) || returnFinSegment.isSyn) {
+    if (!returnFinSegment.isFin || returnFinSegment.isAck || returnFinSegment.isSyn) {
       System.out.println("Error: Snd - unexpected flags!");
     }
     nextByteExpected++;
 
+    // Send last ACK
     GBNSegment lastAckSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
     sendPacket(lastAckSegment, receiverIp, receiverPort);
 
