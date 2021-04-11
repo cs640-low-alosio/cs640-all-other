@@ -1,5 +1,6 @@
 import java.io.DataInputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.DatagramPacket;
@@ -19,55 +20,59 @@ public class Sender extends TCPEndHost {
     this.sws = sws;
   }
 
-  public void openConnection() throws IOException {
-    this.socket = new DatagramSocket(senderSourcePort);
+  public void openConnection() {
+    try {
+      this.socket = new DatagramSocket(senderSourcePort);
 
-    // Send First Syn Packet
-    // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
-    // piazza@395
-    // TODO: Check flags
-    // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
-    // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
-    GBNSegment handshakeSyn = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYN);
-    byte[] handshakeSynData = handshakeSyn.serialize();
-    DatagramPacket handshakeSynPacket =
-        new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
-    // System.out.println("Handshake: Sender first syn chk: " + handshakeSyn.getChecksum());
-    socket.send(handshakeSynPacket);
-    bsn++;
+      // Send First Syn Packet
+      // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
+      // piazza@395
+      // TODO: Check flags
+      // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
+      // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
+      GBNSegment handshakeSyn = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYN);
+      byte[] handshakeSynData = handshakeSyn.serialize();
+      DatagramPacket handshakeSynPacket =
+          new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
+      // System.out.println("Handshake: Sender first syn chk: " + handshakeSyn.getChecksum());
+      socket.send(handshakeSynPacket);
+      bsn++;
 
-    // Receive 2nd Syn+Ack Packet
-    byte[] hsSynAckBytes = new byte[mtu];
-    DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
-    socket.receive(hsSynAckPacket);
-    hsSynAckBytes = hsSynAckPacket.getData();
-    GBNSegment hsSynAck = new GBNSegment();
-    hsSynAck.deserialize(hsSynAckBytes);
-    // System.out.println("Handshake: Sndr syn+ack chk: " + hsSynAck.getChecksum());
+      // Receive 2nd Syn+Ack Packet
+      byte[] hsSynAckBytes = new byte[mtu];
+      DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
+      socket.receive(hsSynAckPacket);
+      hsSynAckBytes = hsSynAckPacket.getData();
+      GBNSegment hsSynAck = new GBNSegment();
+      hsSynAck.deserialize(hsSynAckBytes);
+      // System.out.println("Handshake: Sndr syn+ack chk: " + hsSynAck.getChecksum());
 
-    // Verify checksum Syn+Ack packet
-    short origChk = hsSynAck.getChecksum();
-    hsSynAck.resetChecksum();
-    hsSynAck.serialize();
-    short calcChk = hsSynAck.getChecksum();
-    if (origChk != calcChk) {
-      System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
+      // Verify checksum Syn+Ack packet
+      short origChk = hsSynAck.getChecksum();
+      hsSynAck.resetChecksum();
+      hsSynAck.serialize();
+      short calcChk = hsSynAck.getChecksum();
+      if (origChk != calcChk) {
+        System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
+      }
+      if (!(hsSynAck.isSyn && hsSynAck.isAck)) {
+        System.out.println("Handshake: Sender - Does not have syn+ack flag");
+      }
+      nextByteExpected = hsSynAck.byteSequenceNum + 1;
+
+      // Send 3rd Ack Packet
+      GBNSegment hsAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.ACK);
+      byte[] hsAckBytes = hsAck.serialize();
+      DatagramPacket hsAckUdp =
+          new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
+      // System.out.println("Handshake: Sndr - ack chk: " + hsAck.getChecksum());
+      socket.send(hsAckUdp);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
-    if (!(hsSynAck.isSyn && hsSynAck.isAck)) {
-      System.out.println("Handshake: Sender - Does not have syn+ack flag");
-    }
-    nextByteExpected = hsSynAck.byteSequenceNum + 1;
-
-    // Send 3rd Ack Packet
-    GBNSegment hsAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.ACK);
-    byte[] hsAckBytes = hsAck.serialize();
-    DatagramPacket hsAckUdp =
-        new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
-    // System.out.println("Handshake: Sndr - ack chk: " + hsAck.getChecksum());
-    socket.send(hsAckUdp);
   }
 
-  public void sendData() throws IOException {
+  public void sendData() {
     // Data Transfer
     try (InputStream in = new FileInputStream(filename)) {
       DataInputStream inputStream = new DataInputStream(in);
@@ -137,7 +142,11 @@ public class Sender extends TCPEndHost {
         // remove from buffer
       }
     }
-    //
+    catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
 }

@@ -74,11 +74,15 @@ public class TCPEndHost {
     this.bsn = bsn;
   }
 
-  public GBNSegment handlePacket(DatagramSocket rcvSocket) throws IOException {
+  public GBNSegment handlePacket(DatagramSocket rcvSocket) {
     // Receive First Syn Packet
     byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
     DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
-    rcvSocket.receive(packet);
+    try {
+      rcvSocket.receive(packet);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     bytes = packet.getData();
     // System.out.println("handlePacket(): bytes.length: " + bytes.length);
     GBNSegment segment = new GBNSegment();

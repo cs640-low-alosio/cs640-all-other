@@ -17,62 +17,66 @@ public class Receiver extends TCPEndHost {
     this.sws = sws;
   }
 
-  public void openConnection() throws IOException {
-    this.socket = new DatagramSocket(receiverPort);
+  public void openConnection() {
+    try {
+      this.socket = new DatagramSocket(receiverPort);
 
-    // Receive First Syn Packet
-    byte[] bytes = new byte[mtu];
-    DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu);
-    socket.receive(handshakeSynPacket);
-    byte[] handshakeSynBytes = handshakeSynPacket.getData();
-    GBNSegment handshakeSyn = new GBNSegment();
-    handshakeSyn.deserialize(handshakeSynBytes);
-    // System.out.println("Rcvr first syn chk: " + handshakeSyn.getChecksum());
+      // Receive First Syn Packet
+      byte[] bytes = new byte[mtu];
+      DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu);
+      socket.receive(handshakeSynPacket);
+      byte[] handshakeSynBytes = handshakeSynPacket.getData();
+      GBNSegment handshakeSyn = new GBNSegment();
+      handshakeSyn.deserialize(handshakeSynBytes);
+      // System.out.println("Rcvr first syn chk: " + handshakeSyn.getChecksum());
 
-    // Verify checksum first syn packet
-    short origChk = handshakeSyn.getChecksum();
-    handshakeSyn.resetChecksum();
-    handshakeSyn.serialize();
-    short calcChk = handshakeSyn.getChecksum();
-    if (origChk != calcChk) {
-      System.out.println("Rcvr - first syn chk does not match!");
-    }
-    if (!handshakeSyn.isSyn || handshakeSyn.isAck || handshakeSyn.isFin) {
-      System.out.println("Handshake: Rcvr - first segment doesn't have SYN flag!");
-    }
-    senderIp = handshakeSynPacket.getAddress();
-    senderPort = handshakeSynPacket.getPort();
+      // Verify checksum first syn packet
+      short origChk = handshakeSyn.getChecksum();
+      handshakeSyn.resetChecksum();
+      handshakeSyn.serialize();
+      short calcChk = handshakeSyn.getChecksum();
+      if (origChk != calcChk) {
+        System.out.println("Rcvr - first syn chk does not match!");
+      }
+      if (!handshakeSyn.isSyn || handshakeSyn.isAck || handshakeSyn.isFin) {
+        System.out.println("Handshake: Rcvr - first segment doesn't have SYN flag!");
+      }
+      senderIp = handshakeSynPacket.getAddress();
+      senderPort = handshakeSynPacket.getPort();
 
-    // Send 2nd Syn+Ack Packet
-    GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYNACK);
-    byte[] hsSynAckBytes = hsSynAck.serialize();
-    DatagramPacket hsSynAckPacket =
-        new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
-    // System.out.println("Rcvr - send syn+ack chk: " + handshakeSyn.getChecksum());
-    bsn++;
-    socket.send(hsSynAckPacket);
+      // Send 2nd Syn+Ack Packet
+      GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, HandshakeType.SYNACK);
+      byte[] hsSynAckBytes = hsSynAck.serialize();
+      DatagramPacket hsSynAckPacket =
+          new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
+      // System.out.println("Rcvr - send syn+ack chk: " + handshakeSyn.getChecksum());
+      bsn++;
+      socket.send(hsSynAckPacket);
 
-    // Receive Ack Packet (3rd leg)
-    byte[] hsAckBytes = new byte[mtu];
-    DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
-    socket.receive(hsAckUdp);
-    hsAckBytes = hsAckUdp.getData();
-    GBNSegment hsAck = new GBNSegment();
-    hsAck.deserialize(hsAckBytes);
-    // System.out.println("Rcvr - ack chk: " + hsAck.getChecksum());
+      // Receive Ack Packet (3rd leg)
+      byte[] hsAckBytes = new byte[mtu];
+      DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
+      socket.receive(hsAckUdp);
+      hsAckBytes = hsAckUdp.getData();
+      GBNSegment hsAck = new GBNSegment();
+      hsAck.deserialize(hsAckBytes);
+      // System.out.println("Rcvr - ack chk: " + hsAck.getChecksum());
 
-    // Verify checksum first syn packet
-    origChk = hsAck.getChecksum();
-    hsAck.resetChecksum();
-    hsAck.serialize();
-    calcChk = hsAck.getChecksum();
-    if (origChk != calcChk) {
-      System.out.println("Rcvr - ack chk does not match!");
-    }
-    // TODO: handle case where ACK handshake packet is dropped
-    // (5.2 "First, if the client's ACK to the server is lost...")
-    if (!hsAck.isAck || hsAck.isFin || hsAck.isSyn) {
-      System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
+      // Verify checksum first syn packet
+      origChk = hsAck.getChecksum();
+      hsAck.resetChecksum();
+      hsAck.serialize();
+      calcChk = hsAck.getChecksum();
+      if (origChk != calcChk) {
+        System.out.println("Rcvr - ack chk does not match!");
+      }
+      // TODO: handle case where ACK handshake packet is dropped
+      // (5.2 "First, if the client's ACK to the server is lost...")
+      if (!hsAck.isAck || hsAck.isFin || hsAck.isSyn) {
+        System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 
