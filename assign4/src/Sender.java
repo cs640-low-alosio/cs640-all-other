@@ -109,6 +109,9 @@ public class Sender extends TCPEndHost {
             } else {
               break;
             }
+          } else {
+            onePayload = new byte[mtu];
+            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j + 1) * mtu);            
           }
 //          if (lastPayloadLength != 0) {
 //            onePayload = new byte[lastPayloadLength];
@@ -117,8 +120,6 @@ public class Sender extends TCPEndHost {
 //          } else if (payloadLength == 0) {
 //            break;
 //          } else {
-            onePayload = new byte[mtu];
-            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j + 1) * mtu);
 //            lastByteWritten += mtu;
 //            byteReadCount = byteReadCount - mtu;
 //          }
