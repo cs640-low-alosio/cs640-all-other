@@ -100,19 +100,21 @@ public class Sender extends TCPEndHost {
         for (int j = 0; j < (byteReadCount / mtu) + 1 ; j++) {
           byte[] onePayload;
 //          int lastPayloadLength = byteReadCount % mtu;
-//          int payloadLength = (byteReadCount - ((j - 1) * mtu)) % mtu;
-          if (j == byteReadCount / mtu) {
-            int lastPayloadLength = byteReadCount % mtu;
-            if (lastPayloadLength != 0) {
-              onePayload = new byte[lastPayloadLength];
-              onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);  
-            } else {
+          int payloadLength;
+          if (j == byteReadCount / mtu) { // last payload
+            payloadLength = byteReadCount % mtu;
+            if (payloadLength != 0) {
+              payloadLength =  byteReadCount % mtu;
+//              onePayload = new byte[lastPayloadLength];
+//              onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);  
+            } else { // last payload is 0
               break;
             }
           } else {
-            onePayload = new byte[mtu];
-            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j + 1) * mtu);            
+            payloadLength = mtu;
           }
+          onePayload = new byte[payloadLength];
+          onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + payloadLength);            
 //          if (lastPayloadLength != 0) {
 //            onePayload = new byte[lastPayloadLength];
 //            onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + lastPayloadLength);

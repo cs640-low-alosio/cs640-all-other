@@ -161,7 +161,7 @@ public class GBNSegment {
     System.out.println("deserialize(): bb.position: " + bb.position() + ", bb.limit(): " + bb.limit() + ", dataLen: " + this.dataLength);
     this.payloadData = Arrays.copyOfRange(data, bb.position(), bb.limit());
     
-    System.out.println("deserialize(): " + payloadData.length);
+    System.out.println("deserialize(): payloadData.length: " + payloadData.length);
 
     return null;
   }
