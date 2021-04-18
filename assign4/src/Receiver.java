@@ -88,8 +88,8 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-      int lastByteReceived = nextByteExpected; // currently redundant as long as discarding out-of-order pkt
-      int lastByteRead = 0;
+//      int lastByteReceived = nextByteExpected; // currently redundant as long as discarding out-of-order pkt
+//      int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
       while (isOpen) {
@@ -148,8 +148,8 @@ public class Receiver extends TCPEndHost {
               // Reconstruct file
               outStream.write(minSegment.getPayload());
 
-              lastByteReceived += minSegment.getDataLength();
-              nextByteExpected = lastByteReceived + 1;
+//              lastByteReceived += minSegment.getDataLength();
+              nextByteExpected += minSegment.getDataLength();
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
               sendPacket(ackSegment, senderIp, senderPort);
               
