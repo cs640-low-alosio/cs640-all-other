@@ -117,6 +117,7 @@ public class Receiver extends TCPEndHost {
 
           while (!sendBuffer.isEmpty()) { // restructure this while loop to not be confusing
             GBNSegment minSegment = sendBuffer.peek();
+            System.out.println("Rcv - nextByteExpected: " + nextByteExpected + "min bsn: " + minSegment.byteSequenceNum);
             
             // check if sendBuffer has next expected packet
             if (minSegment.byteSequenceNum == nextByteExpected) {
