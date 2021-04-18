@@ -3,7 +3,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -30,29 +29,30 @@ public class Sender extends TCPEndHost {
       // TODO: Check flags
       // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
       // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
-      GBNSegment handshakeFirstSyn = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYN);
+      GBNSegment handshakeFirstSyn =
+          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYN);
       sendPacket(handshakeFirstSyn, receiverIp, receiverPort);
-//      byte[] handshakeSynData = handshakeSyn.serialize();
-//      DatagramPacket handshakeSynPacket =
-//          new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
-//      socket.send(handshakeSynPacket);
+      // byte[] handshakeSynData = handshakeSyn.serialize();
+      // DatagramPacket handshakeSynPacket =
+      // new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
+      // socket.send(handshakeSynPacket);
       bsn++;
 
-//      // Receive 2nd Syn+Ack Packet
-//      byte[] hsSynAckBytes = new byte[mtu];
-//      DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
-//      socket.receive(hsSynAckPacket);
-//      hsSynAckBytes = hsSynAckPacket.getData();
-//      GBNSegment hsSynAck = new GBNSegment();
-//      hsSynAck.deserialize(hsSynAckBytes);
-//      // Verify checksum Syn+Ack packet
-//      short origChk = hsSynAck.getChecksum();
-//      hsSynAck.resetChecksum();
-//      hsSynAck.serialize();
-//      short calcChk = hsSynAck.getChecksum();
-//      if (origChk != calcChk) {
-//        System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
-//      }
+      // // Receive 2nd Syn+Ack Packet
+      // byte[] hsSynAckBytes = new byte[mtu];
+      // DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
+      // socket.receive(hsSynAckPacket);
+      // hsSynAckBytes = hsSynAckPacket.getData();
+      // GBNSegment hsSynAck = new GBNSegment();
+      // hsSynAck.deserialize(hsSynAckBytes);
+      // // Verify checksum Syn+Ack packet
+      // short origChk = hsSynAck.getChecksum();
+      // hsSynAck.resetChecksum();
+      // hsSynAck.serialize();
+      // short calcChk = hsSynAck.getChecksum();
+      // if (origChk != calcChk) {
+      // System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
+      // }
       GBNSegment handshakeSecondSynAck = handlePacket(socket);
       if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
         System.out.println("Handshake: Sender - Does not have syn+ack flag");
@@ -60,12 +60,13 @@ public class Sender extends TCPEndHost {
       nextByteExpected++;
 
       // Send 3rd Ack Packet
-      GBNSegment handshakeThirdAck = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+      GBNSegment handshakeThirdAck =
+          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
       sendPacket(handshakeThirdAck, receiverIp, receiverPort);
-//      byte[] hsAckBytes = hsAck.serialize();
-//      DatagramPacket hsAckUdp =
-//          new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
-//      socket.send(hsAckUdp);
+      // byte[] hsAckBytes = hsAck.serialize();
+      // DatagramPacket hsAckUdp =
+      // new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
+      // socket.send(hsAckUdp);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -80,15 +81,15 @@ public class Sender extends TCPEndHost {
       // Initial filling up send buffer
       int lastByteSent = 0;
       int lastByteAcked = 0;
-      int lastByteWritten = 0;
-      int tempLastByteWritten = 0;
-      int effectiveWindow = 0;
-      int advertisedWindow = sws;
+      // int lastByteWritten = 0;
+      // int tempLastByteWritten = 0;
+      // int effectiveWindow = 0;
+      // int advertisedWindow = sws;
       int byteReadCount;
 
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
-        lastByteWritten += byteReadCount;
+        // lastByteWritten += byteReadCount;
         // Send entire buffer (currently = sws)
         // TODO: handle end of file better (it keeps sending on the last iteration even though the
         // file is empty)
@@ -145,7 +146,8 @@ public class Sender extends TCPEndHost {
   public void closeConnection() {
     // Send FIN
     // TODO: retransmit fin
-    GBNSegment finSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
+    GBNSegment finSegment =
+        GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
     sendPacket(finSegment, receiverIp, receiverPort);
     bsn++;
 
@@ -162,7 +164,8 @@ public class Sender extends TCPEndHost {
     nextByteExpected++;
 
     // Send last ACK
-    GBNSegment lastAckSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+    GBNSegment lastAckSegment =
+        GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
     sendPacket(lastAckSegment, receiverIp, receiverPort);
 
     // TODO: wait timeout to close connection (see lecture/book)

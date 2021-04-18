@@ -50,28 +50,28 @@ public class Receiver extends TCPEndHost {
       // Send 2nd Syn+Ack Packet
       GBNSegment handshakeSynAck =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
-//      byte[] hsSynAckBytes = hsSynAck.serialize();
-//      DatagramPacket hsSynAckPacket =
-//          new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
+      // byte[] hsSynAckBytes = hsSynAck.serialize();
+      // DatagramPacket hsSynAckPacket =
+      // new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
       sendPacket(handshakeSynAck, senderIp, senderPort);
       bsn++;
 
       // Receive Ack Packet (3rd leg)
-//      byte[] hsAckBytes = new byte[mtu];
-//      DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
-//      socket.receive(hsAckUdp);
-//      hsAckBytes = hsAckUdp.getData();
-//      GBNSegment hsAck = new GBNSegment();
-//      hsAck.deserialize(hsAckBytes);
+      // byte[] hsAckBytes = new byte[mtu];
+      // DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
+      // socket.receive(hsAckUdp);
+      // hsAckBytes = hsAckUdp.getData();
+      // GBNSegment hsAck = new GBNSegment();
+      // hsAck.deserialize(hsAckBytes);
 
       // Verify checksum first syn packet
-//      origChk = hsAck.getChecksum();
-//      hsAck.resetChecksum();
-//      hsAck.serialize();
-//      calcChk = hsAck.getChecksum();
-//      if (origChk != calcChk) {
-//        System.out.println("Rcvr - ack chk does not match!");
-//      }
+      // origChk = hsAck.getChecksum();
+      // hsAck.resetChecksum();
+      // hsAck.serialize();
+      // calcChk = hsAck.getChecksum();
+      // if (origChk != calcChk) {
+      // System.out.println("Rcvr - ack chk does not match!");
+      // }
       // (5.2 "First, if the client's ACK to the server is lost...")
       // TODO: handle case where ACK handshake packet is dropped
       GBNSegment handshakeAck = handlePacket(socket);
@@ -88,8 +88,9 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-//      int lastByteReceived = nextByteExpected; // currently redundant as long as discarding out-of-order pkt
-//      int lastByteRead = 0;
+      // int lastByteReceived = nextByteExpected; // currently redundant as long as discarding
+      // out-of-order pkt
+      // int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
       while (isOpen) {
@@ -98,9 +99,10 @@ public class Receiver extends TCPEndHost {
         // TODO: send duplicate ACK for non-contiguous byte
         int currBsn = data.byteSequenceNum;
         int firstByteBeyondSws = nextByteExpected + (sws * mtu);
-        if (currBsn != nextByteExpected) {
+//        if (currBsn != nextByteExpected) {
           if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
             // Discard out-of-order packets (outside sliding window size)
+            System.out.println("Rcv - discard out-of-order packet");
             GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
             sendPacket(ackSegment, senderIp, senderPort);
             continue; // wait for more packets
@@ -113,16 +115,18 @@ public class Receiver extends TCPEndHost {
             } else {
               continue; // wait for more packets
             }
-          }
+//          }
 
           while (!sendBuffer.isEmpty()) { // restructure this while loop to not be confusing
             GBNSegment minSegment = sendBuffer.peek();
-            System.out.println("Rcv - nextByteExpected: " + nextByteExpected + "min bsn: " + minSegment.byteSequenceNum);
-            
+            System.out.println("Rcv - nextByteExpected: " + nextByteExpected + ", min bsn: "
+                + minSegment.byteSequenceNum);
+
             // check if sendBuffer has next expected packet
             if (minSegment.byteSequenceNum == nextByteExpected) {
               // Terminate Connection
-              if (!minSegment.isAck || minSegment.getDataLength() <= 0) { // receive non-data packet on close
+              if (!minSegment.isAck || minSegment.getDataLength() <= 0) { // receive non-data packet
+                                                                          // on close
                 if (minSegment.isFin) {
                   isOpen = false;
 
@@ -149,11 +153,11 @@ public class Receiver extends TCPEndHost {
               // Reconstruct file
               outStream.write(minSegment.getPayload());
 
-//              lastByteReceived += minSegment.getDataLength();
+              // lastByteReceived += minSegment.getDataLength();
               nextByteExpected += minSegment.getDataLength();
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
               sendPacket(ackSegment, senderIp, senderPort);
-              
+
               bsnBufferSet.remove(minSegment.byteSequenceNum);
               sendBuffer.remove(minSegment);
             } else {
