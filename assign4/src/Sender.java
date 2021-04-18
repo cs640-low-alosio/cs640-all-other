@@ -86,13 +86,13 @@ public class Sender extends TCPEndHost {
       // int effectiveWindow = 0;
       // int advertisedWindow = sws;
       int byteReadCount;
-
+      int dupAckCount = 0;
+      
+      inputStream.mark(mtu * sws + 1);
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
         // lastByteWritten += byteReadCount;
         // Send entire buffer (currently = sws)
-        // TODO: handle end of file better (it keeps sending on the last iteration even though the
-        // file is empty)
         // TODO: implement sws during retransmit
         // TODO: discard packets due to incorrect checksum
         for (int j = 0; j < (byteReadCount / mtu) + 1; j++) {
@@ -117,24 +117,35 @@ public class Sender extends TCPEndHost {
           bsn += payloadLength;
         }
 
-        // wait for acks
+        // wait for ACKs
         while (lastByteAcked < lastByteSent) {
-          // receive
           GBNSegment ack = handlePacket(socket);
-          if (!ack.isAck) { // TODO: handle fin segment
-            System.out.println("Error: TCPEnd receiver sent something other than an ack");
+          if (!ack.isAck) {
+            System.out.println("Error: Snd - unexpected flags!");
           }
 
           // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
+          int prevAck = lastByteAcked;
           lastByteAcked = ack.getAckNum() - 1;
 
           // TODO: retransmit (timeout)
           // TODO: retransmit (three duplicate acks)
+          if (prevAck == lastByteAcked) {
+            dupAckCount++;
+            if (dupAckCount >= 3) {
+              inputStream.reset();
+              inputStream.skip(lastByteAcked);
+              continue;
+            }
+          } else {
+            dupAckCount = 0;
+          }
 
           // TODO: Nagle's algorithm?
         }
 
         // remove from buffer
+        inputStream.mark(byteReadCount + mtu * sws + 1);
       }
     } catch (FileNotFoundException e) {
       e.printStackTrace();

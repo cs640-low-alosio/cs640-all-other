@@ -1,20 +1,7 @@
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 
 public class TCPEnd {
-
-  static final long INITIAL_TIMEOUT = 5000000000L; // initial timeout in nanoseconds
-  static final DecimalFormat threePlaces = new DecimalFormat("0.000");
 
   public static void main(String[] args) throws IOException {
     int senderSourcePort = -1;

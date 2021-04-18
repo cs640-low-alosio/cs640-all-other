@@ -99,28 +99,25 @@ public class Receiver extends TCPEndHost {
         // TODO: send duplicate ACK for non-contiguous byte
         int currBsn = data.byteSequenceNum;
         int firstByteBeyondSws = nextByteExpected + (sws * mtu);
-//        if (currBsn != nextByteExpected) {
-          if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
-            // Discard out-of-order packets (outside sliding window size)
-            System.out.println("Rcv - discard out-of-order packet");
-            GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
-            sendPacket(ackSegment, senderIp, senderPort);
-            continue; // wait for more packets
+        // Check if received packet is within SWS
+        if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
+          // Discard out-of-order packets (outside sliding window size)
+          System.out.println("Rcv - discard out-of-order packet");
+          GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+          sendPacket(ackSegment, senderIp, senderPort);
+          continue; // wait for more packets
+        } else {
+          // Add packets to buffer if within sliding window size
+          if (!bsnBufferSet.contains(currBsn)) {
+            bsnBufferSet.add(currBsn);
+            sendBuffer.add(data);
+            // process send buffer
           } else {
-            // Add packets to buffer if within sliding window size
-            if (!bsnBufferSet.contains(currBsn)) {
-              bsnBufferSet.add(currBsn);
-              sendBuffer.add(data);
-              // process send buffer
-            } else {
-              continue; // wait for more packets
-            }
-//          }
+            continue; // wait for more packets
+          }
 
           while (!sendBuffer.isEmpty()) { // restructure this while loop to not be confusing
             GBNSegment minSegment = sendBuffer.peek();
-            System.out.println("Rcv - nextByteExpected: " + nextByteExpected + ", min bsn: "
-                + minSegment.byteSequenceNum);
 
             // check if sendBuffer has next expected packet
             if (minSegment.byteSequenceNum == nextByteExpected) {
@@ -162,7 +159,6 @@ public class Receiver extends TCPEndHost {
               sendBuffer.remove(minSegment);
             } else {
               // not next expected packet; send duplicate ACK
-              System.out.println("Rcv - here I am");
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
               sendPacket(ackSegment, senderIp, senderPort);
               break;
