@@ -88,7 +88,6 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-      nextByteExpected = 1;
       int lastByteReceived = 1; // currently redundant as long as discarding out-of-order pkt
       int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
