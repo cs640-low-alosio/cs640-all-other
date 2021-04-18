@@ -85,8 +85,8 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-      int nextByteExpected = 1;
-      int lastByteReceived = 1; // currently redundant as long as discarding out-of-order pkt
+      int nextByteExpected = 0;
+      int lastByteReceived = 0; // currently redundant as long as discarding out-of-order pkt
       int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
@@ -150,6 +150,9 @@ public class Receiver extends TCPEndHost {
               nextByteExpected = lastByteReceived + 1;
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
               sendPacket(ackSegment, senderIp, senderPort);
+              
+              bsnBufferSet.remove(minSegment.byteSequenceNum);
+              sendBuffer.remove(minSegment);
             } else {
               // not next expected packet; send duplicate ACK
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
