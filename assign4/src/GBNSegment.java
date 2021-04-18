@@ -1,12 +1,13 @@
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * 
  * @author Garrett
  *
  */
-public class GBNSegment {
+public class GBNSegment implements Comparable<GBNSegment> {
   static final int HEADER_LENGTH_BYTES = 24;
 
   protected int byteSequenceNum;
@@ -239,6 +240,11 @@ public class GBNSegment {
 
   public byte[] getPayload() {
     return this.payloadData;
+  }
+
+  @Override
+  public int compareTo(GBNSegment o) {
+    return Integer.compare(this.byteSequenceNum, o.byteSequenceNum);
   }
 
 }

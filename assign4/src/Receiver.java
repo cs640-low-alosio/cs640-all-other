@@ -5,6 +5,8 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.HashSet;
+import java.util.PriorityQueue;
 
 public class Receiver extends TCPEndHost {
   protected InetAddress senderIp;
@@ -44,7 +46,8 @@ public class Receiver extends TCPEndHost {
       senderPort = handshakeSynPacket.getPort();
 
       // Send 2nd Syn+Ack Packet
-      GBNSegment hsSynAck = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
+      GBNSegment hsSynAck =
+          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
       byte[] hsSynAckBytes = hsSynAck.serialize();
       DatagramPacket hsSynAckPacket =
           new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
@@ -85,50 +88,79 @@ public class Receiver extends TCPEndHost {
       int nextByteExpected = 0;
       int lastByteReceived = 0; // currently redundant as long as discarding out-of-order pkt
       int lastByteRead = 0;
+      PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
+      HashSet<Integer> bsnBufferSet = new HashSet<>();
       while (isOpen) {
         // Receive data
         GBNSegment data = handlePacket(socket);
-        if (!data.isAck || data.getDataLength() <= 0) {
-          // Set isOpen to false
-          if (data.isFin) {
-            isOpen = false;
-            // Terminate connection
-            // Send ACK
-            // TODO: retransmit ACK
-            GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
-            sendPacket(returnAckSegment, senderIp, senderPort);
-            // Send FIN
-            GBNSegment returnFinSegment = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
-            sendPacket(returnFinSegment, senderIp, senderPort);
-            bsn++;
-            
-            // Recieve last ACK
-            GBNSegment lastAckSegment = handlePacket(socket);
-            if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
-              System.out.println("Error: Rcv - unexpected flags!");
+        // TODO: send duplicate ACK for non-contiguous byte
+        int currBsn = data.byteSequenceNum;
+        int firstByteBeyondSws = nextByteExpected + (sws * mtu);
+        if (currBsn != nextByteExpected) {
+          if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
+            // Discard out-of-order packets (outside sliding window size)
+            GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+            sendPacket(ackSegment, senderIp, senderPort);
+            continue; // wait for more packets
+          } else {
+            // Add packets to buffer if within sliding window size
+            if (!bsnBufferSet.contains(currBsn)) {
+              bsnBufferSet.add(currBsn);
+              sendBuffer.add(data);
+              // process send buffer
+            } else {
+              continue; // wait for more packets
             }
-            socket.close();
-            break;
+          }
+
+          while (!sendBuffer.isEmpty()) {
+            GBNSegment minSegment = sendBuffer.peek();
+            
+            // check if sendBuffer has next expected packet
+            if (minSegment.byteSequenceNum == nextByteExpected) {
+              // Terminate Connection
+              if (!data.isAck || data.getDataLength() <= 0) { // receive non-data packet on close
+                if (data.isFin) {
+                  isOpen = false;
+
+                  // TODO: retransmit ACK
+                  GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+                  sendPacket(returnAckSegment, senderIp, senderPort);
+
+                  GBNSegment returnFinSegment =
+                      GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
+                  sendPacket(returnFinSegment, senderIp, senderPort);
+                  bsn++;
+
+                  GBNSegment lastAckSegment = handlePacket(socket);
+                  if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
+                    System.out.println("Error: Rcv - unexpected flags!");
+                  }
+                  socket.close();
+                  return;
+                } else {
+                  System.out.println("Error: Rcv - unexpected flags!");
+                }
+              }
+
+              // Reconstruct file
+              outStream.write(data.getPayload());
+
+              lastByteReceived += data.getDataLength();
+              nextByteExpected = lastByteReceived + 1;
+              GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+              sendPacket(ackSegment, senderIp, senderPort);
+            } else {
+              // not next expected packet; send duplicate ACK
+              GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+              sendPacket(ackSegment, senderIp, senderPort);
+            }
           }
         }
-        // TODO: discard out-of-order packets (and send duplicate ack)
-
-        // Reconstruct file
-        outStream.write(data.getPayload());
-
-        // Send ack
-        lastByteReceived += data.getDataLength();
-        nextByteExpected = lastByteReceived + 1;
-        GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
-        byte[] ackBytes = ackSegment.serialize();
-        DatagramPacket ackPacket =
-            new DatagramPacket(ackBytes, ackBytes.length, senderIp, senderPort);
-        printOutput(ackSegment, true);
-        socket.send(ackPacket);
       }
     } catch (Exception e) {
       e.printStackTrace();
-    }    
+    }
   }
 
 }

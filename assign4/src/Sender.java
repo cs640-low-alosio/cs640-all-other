@@ -108,11 +108,7 @@ public class Sender extends TCPEndHost {
           onePayload = Arrays.copyOfRange(sendBuffer, j * mtu, (j * mtu) + payloadLength);
 
           GBNSegment dataSegment = GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
-          byte[] dataSegmentBytes = dataSegment.serialize();
-          DatagramPacket dataPacket = new DatagramPacket(dataSegmentBytes, dataSegmentBytes.length,
-              receiverIp, receiverPort);
-          socket.send(dataPacket);
-          printOutput(dataSegment, true);
+          sendPacket(dataSegment, receiverIp, receiverPort);
           lastByteSent += payloadLength;
           bsn += payloadLength;
         }
