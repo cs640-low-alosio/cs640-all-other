@@ -157,6 +157,7 @@ public class Receiver extends TCPEndHost {
               sendBuffer.remove(minSegment);
             } else {
               // not next expected packet; send duplicate ACK
+              System.out.println("Rcv - here I am");
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
               sendPacket(ackSegment, senderIp, senderPort);
               break;
