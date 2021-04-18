@@ -50,14 +50,14 @@ public class Sender extends TCPEndHost {
 //      hsSynAck.resetChecksum();
 //      hsSynAck.serialize();
 //      short calcChk = hsSynAck.getChecksum();
-      GBNSegment handshakeSecondSynAck = handlePacket(socket);
 //      if (origChk != calcChk) {
 //        System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
 //      }
-//      if (!(hsSynAck.isSyn && hsSynAck.isAck)) {
-//        System.out.println("Handshake: Sender - Does not have syn+ack flag");
-//      }
-      nextByteExpected = handshakeSecondSynAck.byteSequenceNum + 1;
+      GBNSegment handshakeSecondSynAck = handlePacket(socket);
+      if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
+        System.out.println("Handshake: Sender - Does not have syn+ack flag");
+      }
+      nextByteExpected++;
 
       // Send 3rd Ack Packet
       GBNSegment handshakeThirdAck = GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);

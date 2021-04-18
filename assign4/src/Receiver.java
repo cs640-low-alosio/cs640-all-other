@@ -53,7 +53,7 @@ public class Receiver extends TCPEndHost {
 //      byte[] hsSynAckBytes = hsSynAck.serialize();
 //      DatagramPacket hsSynAckPacket =
 //          new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
-      sendPacket(handshakeSynAck, senderIp, calcChk);
+      sendPacket(handshakeSynAck, senderIp, senderPort);
       bsn++;
 
       // Receive Ack Packet (3rd leg)
