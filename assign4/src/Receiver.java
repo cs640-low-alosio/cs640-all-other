@@ -88,7 +88,7 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-      int lastByteReceived = 1; // currently redundant as long as discarding out-of-order pkt
+      int lastByteReceived = nextByteExpected; // currently redundant as long as discarding out-of-order pkt
       int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
@@ -121,8 +121,8 @@ public class Receiver extends TCPEndHost {
             // check if sendBuffer has next expected packet
             if (minSegment.byteSequenceNum == nextByteExpected) {
               // Terminate Connection
-              if (!data.isAck || data.getDataLength() <= 0) { // receive non-data packet on close
-                if (data.isFin) {
+              if (!minSegment.isAck || minSegment.getDataLength() <= 0) { // receive non-data packet on close
+                if (minSegment.isFin) {
                   isOpen = false;
 
                   // TODO: retransmit ACK
@@ -146,9 +146,9 @@ public class Receiver extends TCPEndHost {
               }
 
               // Reconstruct file
-              outStream.write(data.getPayload());
+              outStream.write(minSegment.getPayload());
 
-              lastByteReceived += data.getDataLength();
+              lastByteReceived += minSegment.getDataLength();
               nextByteExpected = lastByteReceived + 1;
               GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
               sendPacket(ackSegment, senderIp, senderPort);
