@@ -42,37 +42,40 @@ public class Receiver extends TCPEndHost {
       if (!handshakeSyn.isSyn || handshakeSyn.isAck || handshakeSyn.isFin) {
         System.out.println("Handshake: Rcvr - first segment doesn't have SYN flag!");
       }
+      printOutput(handshakeSyn, false);
       senderIp = handshakeSynPacket.getAddress();
       senderPort = handshakeSynPacket.getPort();
+      nextByteExpected++;
 
       // Send 2nd Syn+Ack Packet
-      GBNSegment hsSynAck =
+      GBNSegment handshakeSynAck =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
-      byte[] hsSynAckBytes = hsSynAck.serialize();
-      DatagramPacket hsSynAckPacket =
-          new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
+//      byte[] hsSynAckBytes = hsSynAck.serialize();
+//      DatagramPacket hsSynAckPacket =
+//          new DatagramPacket(hsSynAckBytes, hsSynAckBytes.length, senderIp, senderPort);
+      sendPacket(handshakeSynAck, senderIp, calcChk);
       bsn++;
-      socket.send(hsSynAckPacket);
 
       // Receive Ack Packet (3rd leg)
-      byte[] hsAckBytes = new byte[mtu];
-      DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
-      socket.receive(hsAckUdp);
-      hsAckBytes = hsAckUdp.getData();
-      GBNSegment hsAck = new GBNSegment();
-      hsAck.deserialize(hsAckBytes);
+//      byte[] hsAckBytes = new byte[mtu];
+//      DatagramPacket hsAckUdp = new DatagramPacket(hsAckBytes, mtu);
+//      socket.receive(hsAckUdp);
+//      hsAckBytes = hsAckUdp.getData();
+//      GBNSegment hsAck = new GBNSegment();
+//      hsAck.deserialize(hsAckBytes);
 
       // Verify checksum first syn packet
-      origChk = hsAck.getChecksum();
-      hsAck.resetChecksum();
-      hsAck.serialize();
-      calcChk = hsAck.getChecksum();
-      if (origChk != calcChk) {
-        System.out.println("Rcvr - ack chk does not match!");
-      }
-      // TODO: handle case where ACK handshake packet is dropped
+//      origChk = hsAck.getChecksum();
+//      hsAck.resetChecksum();
+//      hsAck.serialize();
+//      calcChk = hsAck.getChecksum();
+//      if (origChk != calcChk) {
+//        System.out.println("Rcvr - ack chk does not match!");
+//      }
       // (5.2 "First, if the client's ACK to the server is lost...")
-      if (!hsAck.isAck || hsAck.isFin || hsAck.isSyn) {
+      // TODO: handle case where ACK handshake packet is dropped
+      GBNSegment handshakeAck = handlePacket(socket);
+      if (!handshakeAck.isAck || handshakeAck.isFin || handshakeAck.isSyn) {
         System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
       }
     } catch (IOException e) {
@@ -85,7 +88,7 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-      int nextByteExpected = 1;
+      nextByteExpected = 1;
       int lastByteReceived = 1; // currently redundant as long as discarding out-of-order pkt
       int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
