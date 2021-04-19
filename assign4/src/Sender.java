@@ -142,6 +142,10 @@ public class Sender extends TCPEndHost {
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
                 inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
+                // TODO: reset counters - is this right???
+                lastByteWritten = lastByteAcked;
+                lastByteSent = lastByteAcked;
+                bsn = lastByteAcked;
                 break; // exit wait ACK loop
               }
             } else {
@@ -158,10 +162,14 @@ public class Sender extends TCPEndHost {
               e.printStackTrace();
               return;
             }
-            // Slide the window
+            // Slide the window TODO: redundant with triplicate ACK
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             retransmitCounter++;
+            // TODO: reset counters - is this right???
+            lastByteWritten = lastByteAcked;
+            lastByteSent = lastByteAcked;
+            bsn = lastByteAcked;
             break; // exit wait ACK loop
           }
         }
