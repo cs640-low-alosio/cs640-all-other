@@ -149,7 +149,7 @@ public class Sender extends TCPEndHost {
             }
             // TODO: Nagle's algorithm?
           } catch (SocketTimeoutException e) {
-            // If unacknowledged messages remain in a host’s send buffer and no response from the
+            // If unacknowledged messages remain in a host's send buffer and no response from the
             // destination has been received after multiple retransmission attempts, the sending
             // host will stop trying to send the messages and report an error. This maximum is set
             // to 16 by default.
