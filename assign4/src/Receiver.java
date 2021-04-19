@@ -111,6 +111,7 @@ public class Receiver extends TCPEndHost {
         if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
           // Discard out-of-order packets (outside sliding window size)
           System.out.println("Rcv - discard out-of-order packet");
+          System.out.println("Rcv - sws start, " + nextByteExpected + ", sws begin: " + firstByteBeyondSws);
           GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
           sendPacket(ackSegment, senderIp, senderPort);
           continue; // wait for more packets
