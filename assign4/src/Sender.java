@@ -142,7 +142,7 @@ public class Sender extends TCPEndHost {
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
                 inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-                continue;
+                break; // exit wait ACK loop
               }
             } else {
               dupAckCount = 0;
@@ -162,7 +162,7 @@ public class Sender extends TCPEndHost {
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             retransmitCounter++;
-            continue;
+            break; // exit wait ACK loop
           }
         }
 
