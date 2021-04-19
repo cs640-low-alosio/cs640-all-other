@@ -17,6 +17,7 @@ public class Sender extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
+    this.effectiveRTT = TCPEnd.INITIAL_TIMEOUT;
   }
 
   public void openConnection() {

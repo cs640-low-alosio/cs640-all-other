@@ -7,9 +7,7 @@ import java.net.InetAddress;
  * @author Garrett
  *
  */
-public class TCPEndHost {
-  static final long INITIAL_TIMEOUT = 5000000000L; // initial timeout in nanoseconds
-  
+public class TCPEndHost {  
   protected int senderSourcePort;
   protected int receiverPort;
   protected InetAddress receiverIp;
@@ -19,6 +17,8 @@ public class TCPEndHost {
   protected int bsn;
   protected int nextByteExpected;
   protected DatagramSocket socket;
+  protected long effectiveRTT;
+  protected long effectiveDeviation;
 
   public int getSenderSourcePort() {
     return senderSourcePort;

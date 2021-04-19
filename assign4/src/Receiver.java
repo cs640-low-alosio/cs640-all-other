@@ -17,6 +17,7 @@ public class Receiver extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
+    this.effectiveRTT = TCPEnd.INITIAL_TIMEOUT;
   }
 
   public void openConnection() {
@@ -96,6 +97,8 @@ public class Receiver extends TCPEndHost {
       while (isOpen) {
         // Receive data
         GBNSegment data = handlePacket(socket);
+        long mostRecentTimestamp = data.timestamp;
+        
         // TODO: send duplicate ACK for non-contiguous byte
         int currBsn = data.byteSequenceNum;
         int firstByteBeyondSws = nextByteExpected + (sws * mtu);
@@ -147,7 +150,10 @@ public class Receiver extends TCPEndHost {
                 }
               }
 
-              // Reconstruct file
+              // Reconstruct file and send ACK
+              // TODO: If a client is sending a cumulative acknowledgment of several packets, the
+              // timestamp from the latest received packet which is causing this acknowledgment
+              // should be copied into the reply.
               outStream.write(minSegment.getPayload());
 
               // lastByteReceived += minSegment.getDataLength();

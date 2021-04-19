@@ -21,22 +21,27 @@ public class GBNSegment implements Comparable<GBNSegment> {
   protected int dataLength;
 
   public GBNSegment() {
-    this.byteSequenceNum = 0;
-    this.ackNum = 0;
-    this.timestamp = System.nanoTime();
-    this.isSyn = false;
-    this.isFin = false;
-    this.isAck = false;
-    this.checksum = 0;
-    this.payloadData = new byte[0];
-    this.dataLength = 0;
+//    this.byteSequenceNum = 0;
+//    this.ackNum = 0;
+//    this.timestamp = System.nanoTime();
+//    this.isSyn = false;
+//    this.isFin = false;
+//    this.isAck = false;
+//    this.checksum = 0;
+//    this.payloadData = new byte[0];
+//    this.dataLength = 0;
+    this(0, 0, System.nanoTime(), false, false, false, new byte[0], 0);
   }
 
   public GBNSegment(int bsNum, int ackNum, boolean isSyn, boolean isFin, boolean isAck,
       byte[] payloadData, int dataLength) {
+    this(bsNum, ackNum, System.nanoTime(), isSyn, isFin, isAck, payloadData, dataLength);
+  }
+  
+  public GBNSegment(int bsNum, int ackNum, long timestamp, boolean isSyn, boolean isFin, boolean isAck, byte[] payloadData, int dataLength) {
     this.byteSequenceNum = bsNum;
     this.ackNum = ackNum;
-    this.timestamp = System.nanoTime();
+    this.timestamp = timestamp;
     this.isSyn = isSyn;
     this.isFin = isFin;
     this.isAck = isAck;
@@ -74,8 +79,8 @@ public class GBNSegment implements Comparable<GBNSegment> {
     }
   }
 
-  public static GBNSegment createAckSegment(int bsNum, int ackNum) {
-    return new GBNSegment(bsNum, ackNum, false, false, true, new byte[0], 0);
+  public static GBNSegment createAckSegment(int bsNum, int ackNum, int timestamp) {
+    return new GBNSegment(bsNum, ackNum, timestamp, false, false, true, new byte[0], 0);
   }
 
   public byte[] serialize() {
