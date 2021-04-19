@@ -1,8 +1,8 @@
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
@@ -76,7 +76,7 @@ public class Sender extends TCPEndHost {
 
   public void sendData() {
     // Data Transfer
-    try (InputStream in = new FileInputStream(filename)) {
+    try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(filename))) {
       DataInputStream inputStream = new DataInputStream(in);
       byte[] sendBuffer = new byte[mtu * sws]; // right now, buffer is the same size as the sws
 
