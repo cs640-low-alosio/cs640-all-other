@@ -145,7 +145,7 @@ public class Sender extends TCPEndHost {
                 // TODO: reset counters - is this right???
                 lastByteWritten = lastByteAcked;
                 lastByteSent = lastByteAcked;
-                bsn = lastByteAcked;
+                bsn = lastByteAcked + 1;
                 break; // exit wait ACK loop
               }
             } else {
