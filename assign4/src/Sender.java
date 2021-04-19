@@ -162,7 +162,7 @@ public class Sender extends TCPEndHost {
               e.printStackTrace();
               return;
             }
-            // Slide the window TODO: redundant with triplicate ACK
+            // Slide the window TODO: redundant code with triplicate ACK
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             retransmitCounter++;
