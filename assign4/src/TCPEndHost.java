@@ -7,7 +7,11 @@ import java.net.InetAddress;
  * @author Garrett
  *
  */
-public class TCPEndHost {  
+public class TCPEndHost {
+  public static final long INITIAL_TIMEOUT = 5000000000L; // initial timeout in nanoseconds
+  public static final float ALPHA_RTTFACTOR = 0.875F;
+  public static final float BETA_DEVFACTOR = 0.75F;
+  
   protected int senderSourcePort;
   protected int receiverPort;
   protected InetAddress receiverIp;
@@ -17,8 +21,9 @@ public class TCPEndHost {
   protected int bsn;
   protected int nextByteExpected;
   protected DatagramSocket socket;
-  protected long effectiveRTT;
-  protected long effectiveDeviation;
+  protected long effRTT;
+  protected long effDev;
+  protected long timeout;
 
   public int getSenderSourcePort() {
     return senderSourcePort;
@@ -76,15 +81,11 @@ public class TCPEndHost {
     this.bsn = bsn;
   }
 
-  public GBNSegment handlePacket(DatagramSocket rcvSocket) {
+  public GBNSegment handlePacket(DatagramSocket rcvSocket) throws IOException {
     // Receive packet
     byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
     DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
-    try {
-      rcvSocket.receive(packet);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    rcvSocket.receive(packet);
     bytes = packet.getData();
     GBNSegment segment = new GBNSegment();
     segment = segment.deserialize(bytes);
@@ -96,6 +97,21 @@ public class TCPEndHost {
     short calcChk = segment.getChecksum();
     if (origChk != calcChk) {
       System.out.println("Error: Checksum does not match!");
+    }
+    
+    // Recalculate timeout if ACK
+    if (segment.isAck && segment.dataLength == 0) {
+      if (segment.byteSequenceNum == 0) {
+        this.effRTT = System.nanoTime() - segment.timestamp;
+        this.effDev = 0;
+        this.timeout = 2 * effRTT;
+      } else {
+        long sampRTT = System.nanoTime() - segment.timestamp;
+        long sampDev = Math.abs(sampRTT - effRTT);
+        this.effRTT = (long) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
+        this.effDev = (long) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
+        this.timeout = this.effRTT + 4 * this.effDev; 
+      }
     }
 
     printOutput(segment, false);

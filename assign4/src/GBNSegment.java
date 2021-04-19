@@ -79,7 +79,7 @@ public class GBNSegment implements Comparable<GBNSegment> {
     }
   }
 
-  public static GBNSegment createAckSegment(int bsNum, int ackNum, int timestamp) {
+  public static GBNSegment createAckSegment(int bsNum, int ackNum, long timestamp) {
     return new GBNSegment(bsNum, ackNum, timestamp, false, false, true, new byte[0], 0);
   }
 

@@ -1,12 +1,8 @@
-import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class TCPEnd {
-  public static final long INITIAL_TIMEOUT = 5000000000L; // initial timeout in nanoseconds
-  public static final float ALPHA_RTTFACTOR = 0.875F;
-  public static final float BETA_DEVFACTOR = 0.75F;
-
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws UnknownHostException {
     int senderSourcePort = -1;
     int receiverPort = -1;
     InetAddress receiverIp = null;

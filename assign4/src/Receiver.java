@@ -1,4 +1,5 @@
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,7 +18,7 @@ public class Receiver extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.effectiveRTT = TCPEnd.INITIAL_TIMEOUT;
+    this.timeout = INITIAL_TIMEOUT;
   }
 
   public void openConnection() {
@@ -97,6 +98,10 @@ public class Receiver extends TCPEndHost {
       while (isOpen) {
         // Receive data
         GBNSegment data = handlePacket(socket);
+        
+        // If a client is sending a cumulative acknowledgment of several packets, the
+        // timestamp from the latest received packet which is causing this acknowledgment
+        // should be copied into the reply.
         long mostRecentTimestamp = data.timestamp;
         
         // TODO: send duplicate ACK for non-contiguous byte
@@ -106,7 +111,7 @@ public class Receiver extends TCPEndHost {
         if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
           // Discard out-of-order packets (outside sliding window size)
           System.out.println("Rcv - discard out-of-order packet");
-          GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+          GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
           sendPacket(ackSegment, senderIp, senderPort);
           continue; // wait for more packets
         } else {
@@ -131,7 +136,7 @@ public class Receiver extends TCPEndHost {
                   isOpen = false;
 
                   // TODO: retransmit ACK
-                  GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+                  GBNSegment returnAckSegment = GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
                   sendPacket(returnAckSegment, senderIp, senderPort);
 
                   GBNSegment returnFinSegment =
@@ -151,28 +156,27 @@ public class Receiver extends TCPEndHost {
               }
 
               // Reconstruct file and send ACK
-              // TODO: If a client is sending a cumulative acknowledgment of several packets, the
-              // timestamp from the latest received packet which is causing this acknowledgment
-              // should be copied into the reply.
               outStream.write(minSegment.getPayload());
 
               // lastByteReceived += minSegment.getDataLength();
               nextByteExpected += minSegment.getDataLength();
-              GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+              GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
               sendPacket(ackSegment, senderIp, senderPort);
 
               bsnBufferSet.remove(minSegment.byteSequenceNum);
               sendBuffer.remove(minSegment);
             } else {
               // not next expected packet; send duplicate ACK
-              GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected);
+              GBNSegment ackSegment = GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
               sendPacket(ackSegment, senderIp, senderPort);
               break;
             }
           }
         }
       }
-    } catch (Exception e) {
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
       e.printStackTrace();
     }
   }

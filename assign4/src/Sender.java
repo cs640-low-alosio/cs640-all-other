@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 
 public class Sender extends TCPEndHost {
@@ -17,7 +18,7 @@ public class Sender extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.effectiveRTT = TCPEnd.INITIAL_TIMEOUT;
+    this.timeout = INITIAL_TIMEOUT;
   }
 
   public void openConnection() {
@@ -82,17 +83,18 @@ public class Sender extends TCPEndHost {
       // Initial filling up send buffer
       int lastByteSent = 0;
       int lastByteAcked = 0;
-      // int lastByteWritten = 0;
+      int lastByteWritten = 0;
+      short retransmitCounter = 0;
       // int tempLastByteWritten = 0;
       // int effectiveWindow = 0;
       // int advertisedWindow = sws;
       int byteReadCount;
       int dupAckCount = 0;
-      
+
       inputStream.mark(mtu * sws + 1);
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
-        // lastByteWritten += byteReadCount;
+        lastByteWritten += byteReadCount;
         // Send entire buffer (currently = sws)
         // TODO: implement sws during retransmit
         // TODO: discard packets due to incorrect checksum
@@ -120,33 +122,53 @@ public class Sender extends TCPEndHost {
 
         // wait for ACKs
         while (lastByteAcked < lastByteSent) {
-          GBNSegment ack = handlePacket(socket);
-          if (!ack.isAck) {
-            System.out.println("Error: Snd - unexpected flags!");
-          }
-
-          // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
-          int prevAck = lastByteAcked;
-          lastByteAcked = ack.getAckNum() - 1;
-
-          // TODO: retransmit (timeout)
-          // TODO: retransmit (three duplicate acks)
-          if (prevAck == lastByteAcked) {
-            dupAckCount++;
-            if (dupAckCount >= 3) {
-              inputStream.reset();
-              inputStream.skip(lastByteAcked);
-              continue;
+          try {
+            GBNSegment ack = handlePacket(socket);
+            if (!ack.isAck) {
+              System.out.println("Error: Snd - unexpected flags!");
             }
-          } else {
-            dupAckCount = 0;
-          }
+            this.socket.setSoTimeout((int) (timeout / 1000000));
 
-          // TODO: Nagle's algorithm?
+            // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
+            int prevAck = lastByteAcked;
+            lastByteAcked = ack.getAckNum() - 1;
+
+            // TODO: retransmit (three duplicate acks)
+            // TODO: max retransmit counter for three duplicate ACKs
+            if (prevAck == lastByteAcked) {
+              dupAckCount++;
+              if (dupAckCount >= 3) {
+                inputStream.reset();
+                // Slide the window
+                // skip bytes from lastAck to mark (start of buffer in read loop)
+                inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
+                continue;
+              }
+            } else {
+              dupAckCount = 0;
+            }
+            // TODO: Nagle's algorithm?
+          } catch (SocketTimeoutException e) {
+            // If unacknowledged messages remain in a host’s send buffer and no response from the
+            // destination has been received after multiple retransmission attempts, the sending
+            // host will stop trying to send the messages and report an error. This maximum is set
+            // to 16 by default.
+            if (retransmitCounter >= 16) {
+              System.out.println("Already sent 16 retransmits. Quitting!");
+              e.printStackTrace();
+              return;
+            }
+            // Slide the window
+            inputStream.reset();
+            inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
+            retransmitCounter++;
+            continue;
+          }
         }
 
         // remove from buffer
         inputStream.mark(byteReadCount + mtu * sws + 1);
+        retransmitCounter = 0; // TODO: not sure where to reset this
       }
     } catch (FileNotFoundException e) {
       e.printStackTrace();
@@ -158,40 +180,51 @@ public class Sender extends TCPEndHost {
   public void closeConnection() {
     // Send FIN
     // TODO: retransmit fin
-    GBNSegment finSegment =
-        GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
-    sendPacket(finSegment, receiverIp, receiverPort);
-    bsn++;
+    try {
 
-    // Receive ACK
-    GBNSegment returnAckSegment = handlePacket(socket);
-    if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
-      System.out.println("Error: Snd - unexpected flags!");
+      GBNSegment finSegment =
+          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
+      sendPacket(finSegment, receiverIp, receiverPort);
+      bsn++;
+
+      // Receive ACK
+      GBNSegment returnAckSegment = handlePacket(socket);
+      if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
+        System.out.println("Error: Snd - unexpected flags!");
+      }
+      // Receive FIN
+      GBNSegment returnFinSegment = handlePacket(socket);
+      if (!returnFinSegment.isFin || returnFinSegment.isAck || returnFinSegment.isSyn) {
+        System.out.println("Error: Snd - unexpected flags!");
+      }
+      nextByteExpected++;
+
+      // Send last ACK
+      GBNSegment lastAckSegment =
+          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+      sendPacket(lastAckSegment, receiverIp, receiverPort);
+
+      // TODO: wait timeout to close connection (see lecture/book)
+      // The main thing to recognize about connection teardown is that a connection in the TIME_WAIT
+      // state cannot move to the CLOSED state until it has waited for two times the maximum amount
+      // of
+      // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this is
+      // that, while the local side of the connection has sent an ACK in response to the other
+      // side's
+      // FIN segment, it does not know that the ACK was successfully delivered. As a consequence,
+      // the
+      // other side might retransmit its FIN segment, and this second FIN segment might be delayed
+      // in
+      // the network. If the connection were allowed to move directly to the CLOSED state, then
+      // another pair of application processes might come along and open the same connection (i.e.,
+      // use the same pair of port numbers), and the delayed FIN segment from the earlier
+      // incarnation
+      // of the connection would immediately initiate the termination of the later incarnation of
+      // that
+      // connection.
+    } catch (IOException e) {
+      // TODO: handle exception
     }
-    // Receive FIN
-    GBNSegment returnFinSegment = handlePacket(socket);
-    if (!returnFinSegment.isFin || returnFinSegment.isAck || returnFinSegment.isSyn) {
-      System.out.println("Error: Snd - unexpected flags!");
-    }
-    nextByteExpected++;
-
-    // Send last ACK
-    GBNSegment lastAckSegment =
-        GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-    sendPacket(lastAckSegment, receiverIp, receiverPort);
-
-    // TODO: wait timeout to close connection (see lecture/book)
-    // The main thing to recognize about connection teardown is that a connection in the TIME_WAIT
-    // state cannot move to the CLOSED state until it has waited for two times the maximum amount of
-    // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this is
-    // that, while the local side of the connection has sent an ACK in response to the other side's
-    // FIN segment, it does not know that the ACK was successfully delivered. As a consequence, the
-    // other side might retransmit its FIN segment, and this second FIN segment might be delayed in
-    // the network. If the connection were allowed to move directly to the CLOSED state, then
-    // another pair of application processes might come along and open the same connection (i.e.,
-    // use the same pair of port numbers), and the delayed FIN segment from the earlier incarnation
-    // of the connection would immediately initiate the termination of the later incarnation of that
-    // connection.
   }
 
 }
