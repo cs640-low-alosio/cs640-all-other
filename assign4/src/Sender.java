@@ -142,10 +142,9 @@ public class Sender extends TCPEndHost {
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
                 inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-                // TODO: reset counters - is this right???
-                lastByteWritten = lastByteAcked;
-                lastByteSent = lastByteAcked;
-                bsn = lastByteAcked + 1;
+                lastByteWritten = lastByteAcked; // is this right???
+                lastByteSent = lastByteAcked; // is this right???
+                bsn = lastByteAcked + 1; // is this right???
                 break; // exit wait ACK loop
               }
             } else {
@@ -166,10 +165,9 @@ public class Sender extends TCPEndHost {
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             retransmitCounter++;
-            // TODO: reset counters - is this right???
-            lastByteWritten = lastByteAcked;
-            lastByteSent = lastByteAcked;
-            bsn = lastByteAcked + 1;
+            lastByteWritten = lastByteAcked; // is this right???
+            lastByteSent = lastByteAcked; // is this right???
+            bsn = lastByteAcked + 1; // is this right???
             break; // exit wait ACK loop
           }
         }
@@ -230,6 +228,8 @@ public class Sender extends TCPEndHost {
       // of the connection would immediately initiate the termination of the later incarnation of
       // that
       // connection.
+      
+      // TODO: print final output
     } catch (IOException e) {
       // TODO: handle exception
     }
