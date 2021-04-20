@@ -33,6 +33,8 @@ public class TCPEnd {
         System.out.println(
             "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
       }
+      
+      long startTime = System.nanoTime();
 
       Sender sender = new Sender(senderSourcePort, receiverIp, receiverPort, filename, mtu, sws);
       sender.openConnection();
@@ -40,6 +42,11 @@ public class TCPEnd {
       sender.closeConnection();
       sender.socket.close();
       sender.printFinalStatsHeader();
+      
+      long endTime = System.nanoTime();
+      long runTime = (startTime - endTime) / 1000000000;
+      System.out.println("  Runtime: " + runTime);
+      
     } else if (args.length == 8) { // TCPEnd receiver mode
       for (int i = 0; i < args.length; i++) {
         String arg = args[i];
@@ -57,11 +64,17 @@ public class TCPEnd {
       if (receiverPort == -1 || mtu == -1 || sws == -1 || filename == null) {
         System.out.println("Receiver: java TCPend -p <port> -m <mtu> -c <sws> -f <file name>");
       }
-
+      
+      long startTime = System.nanoTime();
+      
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
       receiver.openConnection();
       receiver.receiveDataAndClose();
       receiver.printFinalStatsHeader();
+      
+      long endTime = System.nanoTime();
+      long runTime = (startTime - endTime) / 1000000000;
+      System.out.println("  Runtime: " + runTime);
     } else {
       System.out.println(
           "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
