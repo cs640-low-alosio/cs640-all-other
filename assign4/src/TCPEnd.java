@@ -44,8 +44,9 @@ public class TCPEnd {
       sender.printFinalStatsHeader();
       
       long endTime = System.nanoTime();
-      long runTime = (startTime - endTime) / 1000000000;
-      System.out.println("  Runtime: " + runTime);
+      long runTime = (endTime - startTime) / 1000000000;
+      System.out.println("=====Other Stats=====");
+      System.out.println("    Runtime (s): " + runTime);
       
     } else if (args.length == 8) { // TCPEnd receiver mode
       for (int i = 0; i < args.length; i++) {
@@ -73,8 +74,9 @@ public class TCPEnd {
       receiver.printFinalStatsHeader();
       
       long endTime = System.nanoTime();
-      long runTime = (startTime - endTime) / 1000000000;
-      System.out.println("  Runtime: " + runTime);
+      long runTime = (endTime - startTime) / 1000000000;
+      System.out.println("=====Other Stats=====");
+      System.out.println("    Runtime (s): " + runTime);
     } else {
       System.out.println(
           "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
