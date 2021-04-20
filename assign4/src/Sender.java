@@ -122,15 +122,15 @@ public class Sender extends TCPEndHost {
         // wait for ACKs
         while (lastByteAcked < this.lastByteSent) {
           try {
-            GBNSegment ack = handlePacket(socket);
-            if (!ack.isAck) {
+            GBNSegment currAck = handlePacket(socket);
+            if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
             this.socket.setSoTimeout((int) (timeout / 1000000));
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
-            lastByteAcked = ack.getAckNum() - 1;
+            lastByteAcked = currAck.ackNum - 1;
 
             // TODO: retransmit (three duplicate acks)
             // TODO: max retransmit counter for three duplicate ACKs
@@ -164,14 +164,14 @@ public class Sender extends TCPEndHost {
               return;
             }
             // Slide the window TODO: redundant code with triplicate ACK
-            System.out.println("Snd - TO Retransmit! # retransmit: " + numRetransmits);
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-            retransmitCounter++;
-            this.numRetransmits++;
             lastByteWritten = lastByteAcked; // is this right???
             this.lastByteSent = lastByteAcked; // is this right???
             this.bsn = lastByteAcked + 1; // is this right???
+            System.out.println("Snd - TO Retransmit! # retransmit: " + numRetransmits);
+            retransmitCounter++;
+            this.numRetransmits++;
             break; // exit wait ACK loop
           }
         }
