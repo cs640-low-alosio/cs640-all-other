@@ -161,8 +161,8 @@ public class TCPEndHost {
   }
   
   public void printFinalStats() {
-    System.out.println("  Data Sent: " + this.lastByteSent);
-    System.out.println("  Data Received: " + this.lastByteReceived);
+    System.out.println("  Data Sent (KB): " + this.lastByteSent / 1000);
+    System.out.println("  Data Received (KB) : " + this.lastByteReceived / 1000);
     System.out.println("  Packets Sent: " + this.numPacketsSent);
     System.out.println("  Packets Received: " + this.numPacketsReceived);
     System.out.println("  Out-of-Sequence Packets Discarded: " + this.numDiscardPackets);
