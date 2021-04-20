@@ -39,6 +39,7 @@ public class TCPEnd {
       sender.sendData();
       sender.closeConnection();
       sender.socket.close();
+      sender.printFinalStatsHeader();
     } else if (args.length == 8) { // TCPEnd receiver mode
       for (int i = 0; i < args.length; i++) {
         String arg = args[i];
@@ -60,6 +61,7 @@ public class TCPEnd {
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
       receiver.openConnection();
       receiver.receiveDataAndClose();
+      receiver.printFinalStatsHeader();
     } else {
       System.out.println(
           "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
