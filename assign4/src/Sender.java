@@ -138,6 +138,7 @@ public class Sender extends TCPEndHost {
               dupAckCount++;
               this.numDupAcks++;
               if (dupAckCount >= 3) {
+                System.out.println("Snd - Dup Ack Retransmit! # retransmit: " + numRetransmits);
                 inputStream.reset();
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
@@ -163,6 +164,7 @@ public class Sender extends TCPEndHost {
               return;
             }
             // Slide the window TODO: redundant code with triplicate ACK
+            System.out.println("Snd - TO Retransmit! # retransmit: " + numRetransmits);
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             retransmitCounter++;
