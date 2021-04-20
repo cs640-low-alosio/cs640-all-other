@@ -19,6 +19,9 @@ public class Receiver extends TCPEndHost {
     this.mtu = mtu;
     this.sws = sws;
     this.timeout = INITIAL_TIMEOUT;
+    this.lastByteReceived = 0;
+    this.numPacketsSent = 0;
+    this.numPacketsReceived = 0;
   }
 
   public void openConnection() {
@@ -26,6 +29,7 @@ public class Receiver extends TCPEndHost {
       this.socket = new DatagramSocket(receiverPort);
 
       // Receive First Syn Packet
+      // Do this manually to get the sender IP and port
       byte[] bytes = new byte[mtu];
       DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu);
       socket.receive(handshakeSynPacket);
@@ -48,6 +52,7 @@ public class Receiver extends TCPEndHost {
       senderIp = handshakeSynPacket.getAddress();
       senderPort = handshakeSynPacket.getPort();
       nextByteExpected++;
+      numPacketsReceived++;
 
       // Send 2nd Syn+Ack Packet
       GBNSegment handshakeSynAck =
@@ -90,7 +95,6 @@ public class Receiver extends TCPEndHost {
       DataOutputStream outStream = new DataOutputStream(out);
 
       boolean isOpen = true;
-      // int lastByteReceived = nextByteExpected; // currently redundant as long as discarding
       // out-of-order pkt
       // int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
@@ -110,12 +114,11 @@ public class Receiver extends TCPEndHost {
         // Check if received packet is within SWS
         if (currBsn >= firstByteBeyondSws || currBsn < nextByteExpected) {
           // Discard out-of-order packets (outside sliding window size)
-          System.out.println("Rcv - discard out-of-order packet");
-          System.out.println(
-              "Rcv - sws start, " + nextByteExpected + ", sws begin: " + firstByteBeyondSws);
+          // System.out.println("Rcv - discard out-of-order packet");
           GBNSegment ackSegment =
               GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
           sendPacket(ackSegment, senderIp, senderPort);
+          numDiscardPackets++;
           continue; // wait for more packets
         } else {
           // Add packets to buffer if within sliding window size
@@ -164,6 +167,7 @@ public class Receiver extends TCPEndHost {
 
               // lastByteReceived += minSegment.getDataLength();
               nextByteExpected += minSegment.getDataLength();
+              lastByteReceived += minSegment.getDataLength();
               GBNSegment ackSegment =
                   GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
               sendPacket(ackSegment, senderIp, senderPort);
@@ -185,8 +189,11 @@ public class Receiver extends TCPEndHost {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
 
-    // TODO: print final output
+  public void printFinalStatsHeader() {
+    System.out.println("TCPEnd Receiver Finished==========");
+    this.printFinalStats();
   }
 
 }

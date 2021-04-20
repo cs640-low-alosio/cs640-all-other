@@ -24,6 +24,15 @@ public class TCPEndHost {
   protected long effRTT;
   protected long effDev;
   protected long timeout;
+  
+  // Final stat counters
+  protected int numPacketsSent;
+  protected int numPacketsReceived;
+  protected int lastByteSent;
+  protected int lastByteReceived;
+  protected int numDiscardPackets;
+  protected int numRetransmits;
+  protected int numDupAcks;
 
   public int getSenderSourcePort() {
     return senderSourcePort;
@@ -113,7 +122,10 @@ public class TCPEndHost {
         this.timeout = this.effRTT + 4 * this.effDev; 
       }
     }
-
+    
+    // Final stat counters
+    this.numPacketsReceived++;
+    
     printOutput(segment, false);
 
     return segment;
@@ -141,9 +153,20 @@ public class TCPEndHost {
     DatagramPacket packet = new DatagramPacket(segmentBytes, segmentBytes.length, destIp, destPort);
     try {
       socket.send(packet);
+      this.numPacketsSent++;
     } catch (IOException e) {
       e.printStackTrace();
     }
     printOutput(segment, true);
+  }
+  
+  public void printFinalStats() {
+    System.out.println("  Data Sent: " + this.lastByteSent);
+    System.out.println("  Data Received: " + this.lastByteReceived);
+    System.out.println("  Packets Sent: " + this.numPacketsSent);
+    System.out.println("  Packets Received: " + this.numPacketsReceived);
+    System.out.println("  Out-of-Sequence Packets Discarded: " + this.numDiscardPackets);
+    System.out.println("  Number of Retransmissions: " + this.numRetransmits);
+    System.out.println("  Number of Duplicate Acknowledgements: " + this.numDupAcks);
   }
 }

@@ -81,7 +81,6 @@ public class Sender extends TCPEndHost {
       byte[] sendBuffer = new byte[mtu * sws]; // right now, buffer is the same size as the sws
 
       // Initial filling up send buffer
-      int lastByteSent = 0;
       int lastByteAcked = 0;
       int lastByteWritten = 0;
       short retransmitCounter = 0;
@@ -116,12 +115,12 @@ public class Sender extends TCPEndHost {
 
           GBNSegment dataSegment = GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
           sendPacket(dataSegment, receiverIp, receiverPort);
-          lastByteSent += payloadLength;
+          this.lastByteSent += payloadLength;
           bsn += payloadLength;
         }
 
         // wait for ACKs
-        while (lastByteAcked < lastByteSent) {
+        while (lastByteAcked < this.lastByteSent) {
           try {
             GBNSegment ack = handlePacket(socket);
             if (!ack.isAck) {
@@ -137,14 +136,15 @@ public class Sender extends TCPEndHost {
             // TODO: max retransmit counter for three duplicate ACKs
             if (prevAck == lastByteAcked) {
               dupAckCount++;
+              this.numDupAcks++;
               if (dupAckCount >= 3) {
                 inputStream.reset();
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
                 inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
                 lastByteWritten = lastByteAcked; // is this right???
-                lastByteSent = lastByteAcked; // is this right???
-                bsn = lastByteAcked + 1; // is this right???
+                this.lastByteSent = lastByteAcked; // is this right???
+                this.bsn = lastByteAcked + 1; // is this right???
                 break; // exit wait ACK loop
               }
             } else {
@@ -165,9 +165,10 @@ public class Sender extends TCPEndHost {
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             retransmitCounter++;
+            this.numRetransmits++;
             lastByteWritten = lastByteAcked; // is this right???
-            lastByteSent = lastByteAcked; // is this right???
-            bsn = lastByteAcked + 1; // is this right???
+            this.lastByteSent = lastByteAcked; // is this right???
+            this.bsn = lastByteAcked + 1; // is this right???
             break; // exit wait ACK loop
           }
         }
@@ -227,6 +228,11 @@ public class Sender extends TCPEndHost {
     } catch (IOException e) {
       // TODO: handle exception
     }
+  }
+  
+  public void printFinalStatsHeader() {
+    System.out.println("TCPEnd Sender Finished==========");
+    this.printFinalStats();
   }
 
 }
