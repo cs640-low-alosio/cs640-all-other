@@ -168,9 +168,10 @@ public class Receiver extends TCPEndHost {
               // lastByteReceived += minSegment.getDataLength();
               nextByteExpected += minSegment.getDataLength();
               lastByteReceived += minSegment.getDataLength();
-              GBNSegment ackSegment =
-                  GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
-              sendPacket(ackSegment, senderIp, senderPort);
+              // individual ACK was here
+              // GBNSegment ackSegment =
+              // GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
+              // sendPacket(ackSegment, senderIp, senderPort);
 
               bsnBufferSet.remove(minSegment.byteSequenceNum);
               sendBuffer.remove(minSegment);
@@ -182,6 +183,10 @@ public class Receiver extends TCPEndHost {
               break;
             }
           }
+          // cumulative ACK goes here?
+          GBNSegment ackSegment =
+              GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
+          sendPacket(ackSegment, senderIp, senderPort);
         }
       }
     } catch (FileNotFoundException e) {
