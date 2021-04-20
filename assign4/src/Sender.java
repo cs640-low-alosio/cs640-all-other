@@ -145,6 +145,7 @@ public class Sender extends TCPEndHost {
                 lastByteWritten = lastByteAcked; // is this right???
                 this.lastByteSent = lastByteAcked; // is this right???
                 this.bsn = lastByteAcked + 1; // is this right???
+                this.numRetransmits++;
                 break; // exit wait ACK loop
               }
             } else {
