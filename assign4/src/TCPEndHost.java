@@ -113,10 +113,12 @@ public class TCPEndHost {
     if (segment.isAck && segment.dataLength == 0) {
       if (segment.byteSequenceNum == 0) {
         this.effRTT = (int) (System.nanoTime() - segment.timestamp);
+        System.out.println("effRTT: " + effRTT);
         this.effDev = 0;
         this.timeout = 2 * effRTT;
       } else {
         int sampRTT = (int) (System.nanoTime() - segment.timestamp);
+        System.out.println("sampRTT: " + sampRTT);
         int sampDev = Math.abs(sampRTT - effRTT);
         this.effRTT = (int) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
         this.effDev = (int) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
