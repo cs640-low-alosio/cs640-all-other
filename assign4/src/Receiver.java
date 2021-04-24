@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.HashSet;
 import java.util.PriorityQueue;
@@ -98,11 +97,11 @@ public class Receiver extends TCPEndHost {
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
 
-      if (firstReceivedAck != null) {
-        // can happen when first ACK in handshake is dropped
-        sendBuffer.add(firstReceivedAck);
-        bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
-      }
+//      if (firstReceivedAck != null) {
+//        // can happen when first ACK in handshake is dropped
+//        sendBuffer.add(firstReceivedAck);
+//        bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
+//      }
 
       while (isOpen) {
         // Receive data
