@@ -201,6 +201,7 @@ public class Sender extends TCPEndHost {
           returnFinAckSegment = handlePacket();
         } catch (SegmentChecksumMismatchException e) {
           e.printStackTrace();
+          bsn--;
           continue;
         }
         
