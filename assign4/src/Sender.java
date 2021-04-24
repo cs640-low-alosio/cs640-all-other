@@ -168,7 +168,7 @@ public class Sender extends TCPEndHost {
             lastByteWritten = lastByteAcked; // is this right???
             this.lastByteSent = lastByteAcked; // is this right???
             this.bsn = lastByteAcked + 1; // is this right???
-            System.out.println("Snd - TO Retransmit! # retransmit: " + numRetransmits);
+            System.out.println("Snd - TO Retransmit! # curr retransmit: " + retransmitCounter);
             retransmitCounter++;
             this.numRetransmits++;
             break; // exit wait ACK loop
