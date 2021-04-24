@@ -189,8 +189,8 @@ public class Sender extends TCPEndHost {
 
       // Receive FIN+ACK
       try {
-        GBNSegment returnFinSegment = handlePacket();
-        if (returnFinSegment.isFin && returnFinSegment.isAck && !returnFinSegment.isSyn) {
+        GBNSegment returnFinAckSegment = handlePacket();
+        if (returnFinAckSegment.isFin && returnFinAckSegment.isAck && !returnFinAckSegment.isSyn) {
           nextByteExpected++;
           isFinAckReceived = true;
           
@@ -201,6 +201,7 @@ public class Sender extends TCPEndHost {
         } else {
           this.numRetransmits++;
           bsn--;
+          continue;
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
