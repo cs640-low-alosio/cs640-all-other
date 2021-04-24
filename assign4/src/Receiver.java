@@ -117,11 +117,11 @@ public class Receiver extends TCPEndHost {
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
       
-      if (firstReceivedAck != null && firstReceivedAck.isAck && firstReceivedAck.dataLength >= 0) {
-        // can happen if handshake ACK is lost
-        sendBuffer.add(firstReceivedAck);
-        bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
-      }
+//      if (firstReceivedAck != null && firstReceivedAck.isAck && firstReceivedAck.dataLength >= 0) {
+//        // can happen if handshake ACK is lost
+//        sendBuffer.add(firstReceivedAck);
+//        bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
+//      }
 
       while (isOpen) {
         // Receive data
