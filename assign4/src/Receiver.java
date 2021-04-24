@@ -68,8 +68,8 @@ public class Receiver extends TCPEndHost {
 
         // Receive Ack Packet (3rd leg)
         firstReceivedAck = handlePacket();
-        if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn){
-          isFirstAckReceived = true;          
+        if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn) {
+          isFirstAckReceived = true;
         } else {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
           bsn--;
@@ -99,7 +99,6 @@ public class Receiver extends TCPEndHost {
 
       boolean isOpen = true;
       // out-of-order pkt
-      // int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
 
@@ -117,7 +116,6 @@ public class Receiver extends TCPEndHost {
         // Check if received packet is within SWS
         if (currBsn >= firstByteBeyondSws) {
           // Discard out-of-order packets (outside sliding window size)
-          // TODO: should we ack out-of-order packets?
           System.out.println("Rcv - discard out-of-order packet!!!");
           GBNSegment ackSegment =
               GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
@@ -125,7 +123,7 @@ public class Receiver extends TCPEndHost {
           numDiscardPackets++;
           continue; // wait for more packets
         } else if (currBsn < nextByteExpected) { // before sws...?
-          // BUG: when this condition was part of the discard out-of-order packet
+          // When this condition was part of the discard out-of-order packet
           // and send ACK case above, we were sending a ton of duplicate ACKs which was causing
           // a ton of extra traffic
           continue;
@@ -145,9 +143,8 @@ public class Receiver extends TCPEndHost {
             // check if sendBuffer has next expected packet
             if (minSegment.byteSequenceNum == nextByteExpected) {
               // Terminate Connection
-              if (!minSegment.isAck || minSegment.getDataLength() <= 0) { // receive non-data packet
-                                                                          // on close
-
+              if (!minSegment.isAck || minSegment.getDataLength() <= 0) {
+                // receive non-data packeton close
                 if (minSegment.isFin) {
 
                   closeConnection(mostRecentTimestamp);
@@ -162,10 +159,8 @@ public class Receiver extends TCPEndHost {
                 // Reconstruct file and send ACK
                 outStream.write(minSegment.getPayload());
 
-                // lastByteReceived += minSegment.getDataLength();
                 nextByteExpected += minSegment.getDataLength();
                 lastByteReceived += minSegment.getDataLength();
-                // individual ACK was here
                 GBNSegment ackSegment =
                     GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
                 sendPacket(ackSegment, senderIp, senderPort);
