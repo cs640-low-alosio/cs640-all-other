@@ -20,7 +20,7 @@ public class Sender extends TCPEndHost {
     this.sws = sws;
   }
 
-  public boolean openConnection() throws IOException {
+  public void openConnection() throws IOException, MaxRetransmitException {
     this.socket = new DatagramSocket(senderSourcePort);
     this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
 
@@ -47,9 +47,8 @@ public class Sender extends TCPEndHost {
         } else {
           this.numRetransmits++;
           if (this.numRetransmits >= 17) {
-            // exit immediately after 16 retransmit attempts
-            System.out.println("Max SYN retransmits!");
-            return true;
+            // exit immediately
+            throw new MaxRetransmitException("Max SYN retransmits!");
           }
           bsn--;
           continue;
@@ -58,16 +57,13 @@ public class Sender extends TCPEndHost {
         this.numRetransmits++;
         if (this.numRetransmits % 17 == 0) {
           // exit immediately
-          System.out.println("Max SYN retransmits!");
-          return true;
+          throw new MaxRetransmitException("Max SYN retransmits!");
         }
         bsn--;
         System.out.println("Retransmit SYN! " + this.numRetransmits);
         continue;
       }
     }
-
-    return false;
   }
 
   public void sendData() {
@@ -185,7 +181,7 @@ public class Sender extends TCPEndHost {
     }
   }
 
-  public boolean closeConnection() throws IOException {
+  public void closeConnection() throws IOException, MaxRetransmitException {
     // Send FIN
     boolean isFinAckReceived = false;
     short currNumRetransmits = 0;
@@ -209,9 +205,8 @@ public class Sender extends TCPEndHost {
         } else {
           currNumRetransmits++;
           if (currNumRetransmits >= 17) {
-            // exit immediately after 16 retransmit attempts
-            System.out.println("Max FIN retransmits!");
-            return true;
+            // exit immediately
+            throw new MaxRetransmitException("Max FIN retransmits!");
           }
           this.numRetransmits++;
           bsn--;
@@ -220,9 +215,8 @@ public class Sender extends TCPEndHost {
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
-          // exit immediately after 16 retransmit attempts
-          System.out.println("Max FIN retransmits!");
-          return true;
+          // exit immediately
+          throw new MaxRetransmitException("Max FIN retransmits!");
         }
         System.out.println("retransmit FIN! " + currNumRetransmits);
         this.numRetransmits++;
@@ -230,7 +224,6 @@ public class Sender extends TCPEndHost {
         continue;
       }
     }
-    return false;
   }
 
   public void printFinalStatsHeader() {

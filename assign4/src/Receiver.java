@@ -24,7 +24,7 @@ public class Receiver extends TCPEndHost {
     this.numPacketsReceived = 0;
   }
 
-  public GBNSegment openConnection() throws IOException {
+  public GBNSegment openConnection() throws IOException, MaxRetransmitException {
     GBNSegment firstReceivedAck = null;
 
     this.socket = new DatagramSocket(receiverPort);
@@ -75,8 +75,7 @@ public class Receiver extends TCPEndHost {
           this.numRetransmits++;
           if (this.numRetransmits % 17 == 0) {
             // exit immediately
-            System.out.println("Max SYN retransmits!");
-            return null;
+            throw new MaxRetransmitException("Max SYNACK retransmits!");
           }
           bsn--;
           continue;
@@ -84,8 +83,8 @@ public class Receiver extends TCPEndHost {
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
         if (this.numRetransmits % 17 == 0) {
-          System.out.println("Max SYNACK retransmits!");
-          return null;
+          // exit immediately
+          throw new MaxRetransmitException("Max SYNACK retransmits!");
         }
         System.out.println("Retransmit SYNACK!" + this.numRetransmits);
         bsn--;
@@ -99,7 +98,7 @@ public class Receiver extends TCPEndHost {
     }
   }
 
-  public void receiveDataAndClose(GBNSegment firstReceivedAck) {
+  public void receiveDataAndClose(GBNSegment firstReceivedAck) throws MaxRetransmitException {
     try (OutputStream out = new FileOutputStream(filename)) {
       DataOutputStream outStream = new DataOutputStream(out);
 
@@ -197,7 +196,8 @@ public class Receiver extends TCPEndHost {
     }
   }
 
-  private boolean closeConnection(long mostRecentTimestamp) throws IOException {
+  private void closeConnection(long mostRecentTimestamp)
+      throws IOException, MaxRetransmitException {
     boolean isLastAckReceived = false;
     short currNumRetransmits = 0;
     while (!isLastAckReceived) {
@@ -215,9 +215,8 @@ public class Receiver extends TCPEndHost {
         } else {
           currNumRetransmits++;
           if (currNumRetransmits >= 17) {
-            // exit immediately after 16 retransmit attempts
-            System.out.println("Max FIN retransmits!");
-            return true;
+            // exit immediately
+            throw new MaxRetransmitException("Max FINACK retransmits!");
           }
           this.numRetransmits++;
           bsn--;
@@ -226,16 +225,14 @@ public class Receiver extends TCPEndHost {
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
-          // TODO: exit immediately after 16 retransmit attempts
-          System.out.println("Max FINACK retransmits!");
-          return true;
+          // exit immediately
+          throw new MaxRetransmitException("Max FINACK retransmits!");
         }
         System.out.println("retransmit FINACK!" + currNumRetransmits);
         this.numRetransmits++;
         bsn--;
       }
     }
-    return false;
   }
 
   public void printFinalStatsHeader() {

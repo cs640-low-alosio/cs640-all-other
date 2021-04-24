@@ -33,25 +33,24 @@ public class TCPEnd {
         System.out.println(
             "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
       }
-      
+
       long startTime = System.nanoTime();
 
       Sender sender = new Sender(senderSourcePort, receiverIp, receiverPort, filename, mtu, sws);
-      boolean isMaxRetransmit = false; 
-      isMaxRetransmit = sender.openConnection();
-      if (isMaxRetransmit) {
-        return;
+      try {
+        sender.openConnection();
+        sender.sendData();
+        sender.closeConnection();
+      } catch (MaxRetransmitException e) {
+        e.printStackTrace();
+      } finally {
+        sender.socket.close();
+        sender.printFinalStatsHeader();
+        long endTime = System.nanoTime();
+        float runTime = (endTime - startTime) / 1000000000F;
+        System.out.println("=====Other Stats=====");
+        System.out.println("    Runtime (s): " + TCPEndHost.threePlaces.format(runTime));
       }
-      sender.sendData();
-      sender.closeConnection();
-      sender.socket.close();
-      sender.printFinalStatsHeader();
-      
-      long endTime = System.nanoTime();
-      float runTime = (endTime - startTime) / 1000000000F;
-      System.out.println("=====Other Stats=====");
-      System.out.println("    Runtime (s): " + TCPEndHost.threePlaces.format(runTime));
-      
     } else if (args.length == 8) { // TCPEnd receiver mode
       for (int i = 0; i < args.length; i++) {
         String arg = args[i];
@@ -69,15 +68,19 @@ public class TCPEnd {
       if (receiverPort == -1 || mtu == -1 || sws == -1 || filename == null) {
         System.out.println("Receiver: java TCPend -p <port> -m <mtu> -c <sws> -f <file name>");
       }
-      
+
       long startTime = System.nanoTime();
-      
+
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
-      GBNSegment firstAckReceived = receiver.openConnection();
-      receiver.receiveDataAndClose(firstAckReceived);
+      try {
+        GBNSegment firstAckReceived = receiver.openConnection();
+        receiver.receiveDataAndClose(firstAckReceived);
+      } catch (MaxRetransmitException e) {
+        e.printStackTrace();
+      }
       receiver.socket.close();
       receiver.printFinalStatsHeader();
-      
+
       long endTime = System.nanoTime();
       float runTime = (endTime - startTime) / 1000000000F;
       System.out.println("=====Other Stats=====");
