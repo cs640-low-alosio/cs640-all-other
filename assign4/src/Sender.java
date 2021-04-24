@@ -169,8 +169,7 @@ public class Sender extends TCPEndHost {
           retransmitCounter = 0;
         }
 
-        // remove from buffer
-        // position in file
+        // remove from buffer; mark position in file
         inputStream.mark(mtu * sws);
       }
     } catch (FileNotFoundException e) {
