@@ -72,6 +72,7 @@ public class Receiver extends TCPEndHost {
           isFirstAckReceived = true;          
         } else {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
+          bsn--;
           continue;
         }
       } catch (SocketTimeoutException e) {

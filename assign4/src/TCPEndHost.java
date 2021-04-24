@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.text.DecimalFormat;
 
 /**
  * @author Garrett
@@ -11,6 +12,7 @@ public class TCPEndHost {
   public static final int INITIAL_TIMEOUT_MS = 5000; // initial timeout in ms
   public static final float ALPHA_RTTFACTOR = 0.875F;
   public static final float BETA_DEVFACTOR = 0.75F;
+  public static final DecimalFormat threePlaces = new DecimalFormat("0.000");
 
   protected int senderSourcePort;
   protected int receiverPort;
@@ -168,8 +170,8 @@ public class TCPEndHost {
   }
 
   public void printFinalStats() {
-    System.out.println("  Data Sent (KB): " + this.lastByteSent / 1000);
-    System.out.println("  Data Received (KB) : " + this.lastByteReceived / 1000);
+    System.out.println("  Data Sent (KB): " + threePlaces.format(this.lastByteSent / 1000));
+    System.out.println("  Data Received (KB) : " + threePlaces.format(this.lastByteReceived / 1000));
     System.out.println("  Packets Sent: " + this.numPacketsSent);
     System.out.println("  Packets Received: " + this.numPacketsReceived);
     System.out.println("  Out-of-Sequence Packets Discarded: " + this.numDiscardPackets);

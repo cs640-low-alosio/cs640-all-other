@@ -41,6 +41,7 @@ public class Sender extends TCPEndHost {
           isSynAckReceived = true;
         } else {
           System.out.println("Error: expected SYNACK packet, got something else!");
+          bsn--;
           continue;
         }
 
