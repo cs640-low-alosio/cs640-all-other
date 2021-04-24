@@ -33,8 +33,8 @@ public class Receiver extends TCPEndHost {
 
     // Receive First Syn Packet
     // Do this manually to get the sender IP and port
-    byte[] bytes = new byte[mtu];
-    DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu);
+    byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
+    DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
     socket.receive(handshakeSynPacket);
     byte[] handshakeSynBytes = handshakeSynPacket.getData();
     GBNSegment handshakeSyn = new GBNSegment();
@@ -114,12 +114,7 @@ public class Receiver extends TCPEndHost {
         // timestamp from the latest received packet which is causing this acknowledgment
         // should be copied into the reply.
         long mostRecentTimestamp = data.timestamp;
-        // if (data.dataLength == 0) {
-        // // could happen on third ACK during open/handshake
-        // continue;
-        // }
 
-        // TODO: send duplicate ACK for non-contiguous byte
         int currBsn = data.byteSequenceNum;
         int firstByteBeyondSws = nextByteExpected + (sws * mtu);
         // Check if received packet is within SWS
@@ -189,10 +184,6 @@ public class Receiver extends TCPEndHost {
               break;
             }
           }
-          // cumulative ACK goes here?
-          // GBNSegment ackSegment =
-          // GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
-          // sendPacket(ackSegment, senderIp, senderPort);
         }
       }
     } catch (FileNotFoundException e) {
@@ -202,14 +193,10 @@ public class Receiver extends TCPEndHost {
     }
   }
 
-  private void closeConnection(long mostRecentTimestamp) throws IOException {
-    // TODO: retransmit ACK
+  private boolean closeConnection(long mostRecentTimestamp) throws IOException {
     boolean isLastAckReceived = false;
     short currNumRetransmits = 0;
     while (!isLastAckReceived) {
-      // GBNSegment returnAckSegment =
-      // GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
-      // sendPacket(returnAckSegment, senderIp, senderPort);
 
       GBNSegment returnFinSegment =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FINACK);
@@ -228,13 +215,13 @@ public class Receiver extends TCPEndHost {
         if (currNumRetransmits >= 17) {
           // TODO: exit immediately after 16 retransmit attempts
           System.out.println("Max FINACK retransmits!");
-          return;
+          return true;
         }
         System.out.println("retransmit FINACK!" + currNumRetransmits);
         continue;
       }
     }
-    return;
+    return false;
   }
 
   public void printFinalStatsHeader() {

@@ -26,10 +26,7 @@ public class Sender extends TCPEndHost {
     this.socket.setSoTimeout(timeout);
 
     // Send First Syn Packet
-    // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
     // piazza@395
-    // TODO: Check flags
-    // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
     // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
     boolean isSynAckReceived = false;
     while (!isSynAckReceived) {
@@ -58,12 +55,12 @@ public class Sender extends TCPEndHost {
           System.out.println("Max SYN retransmits!");
           return true;
         }
-        
+
         System.out.println("Retransmit SYN! " + this.numRetransmits);
         continue;
       }
     }
-    
+
     return false;
   }
 
@@ -88,8 +85,6 @@ public class Sender extends TCPEndHost {
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
         lastByteWritten += byteReadCount;
         // Send entire buffer (currently = sws)
-        // TODO: implement sws during retransmit
-        // TODO: discard packets due to incorrect checksum
         for (int j = 0; j < (byteReadCount / mtu) + 1; j++) {
           byte[] onePayload;
           int payloadLength;
@@ -162,7 +157,7 @@ public class Sender extends TCPEndHost {
               return;
             }
             // Slide the window
-            // TODO: redundant code with triplicate ACK
+            // Redundant code with triplicate ACK
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             lastByteWritten = lastByteAcked; // is this right???
@@ -173,7 +168,8 @@ public class Sender extends TCPEndHost {
             this.numRetransmits++;
             break; // exit wait ACK loop
           }
-          retransmitCounter = 0; // TODO: not sure where to reset this
+          // reset counter because we made it through the window without retrasmission
+          retransmitCounter = 0;
         }
 
         // remove from buffer
@@ -187,7 +183,7 @@ public class Sender extends TCPEndHost {
     }
   }
 
-  public void closeConnection() throws IOException {
+  public boolean closeConnection() throws IOException {
     // Send FIN
     boolean isFinAckReceived = false;
     short currNumRetransmits = 0;
@@ -245,13 +241,14 @@ public class Sender extends TCPEndHost {
         if (currNumRetransmits >= 17) {
           // exit immediately after 16 retransmit attempts
           System.out.println("Max FIN retransmits!");
-          return;
+          return true;
         }
         System.out.println("retransmit FIN! " + currNumRetransmits);
         this.numRetransmits++;
         continue;
       }
     }
+    return false;
   }
 
   public void printFinalStatsHeader() {
