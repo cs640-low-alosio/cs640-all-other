@@ -37,7 +37,11 @@ public class TCPEnd {
       long startTime = System.nanoTime();
 
       Sender sender = new Sender(senderSourcePort, receiverIp, receiverPort, filename, mtu, sws);
-      sender.openConnection();
+      boolean isMaxRetransmit = false; 
+      isMaxRetransmit = sender.openConnection();
+      if (isMaxRetransmit) {
+        return;
+      }
       sender.sendData();
       sender.closeConnection();
       sender.socket.close();

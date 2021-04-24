@@ -21,35 +21,46 @@ public class Sender extends TCPEndHost {
     this.timeout = INITIAL_TIMEOUT;
   }
 
-  public void openConnection() {
-    try {
-      this.socket = new DatagramSocket(senderSourcePort);
+  public boolean openConnection() throws IOException {
+    this.socket = new DatagramSocket(senderSourcePort);
 
-      // Send First Syn Packet
-      // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
-      // piazza@395
-      // TODO: Check flags
-      // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
-      // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
+    // Send First Syn Packet
+    // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
+    // piazza@395
+    // TODO: Check flags
+    // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
+    // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
+    boolean isSynAckReceived = false;
+    while (!isSynAckReceived) {
       GBNSegment handshakeFirstSyn =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYN);
       sendPacket(handshakeFirstSyn, receiverIp, receiverPort);
       bsn++;
 
       // // Receive 2nd Syn+Ack Packet
-      GBNSegment handshakeSecondSynAck = handlePacket(socket);
-      if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
-        System.out.println("Handshake: Sender - Does not have syn+ack flag");
-      }
-      nextByteExpected++;
+      try {
+        GBNSegment handshakeSecondSynAck = handlePacket(socket);
+        if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
+          System.out.println("Handshake: Sender - Does not have syn+ack flag");
+        }
+        nextByteExpected++;
+        isSynAckReceived = true;
 
-      // Send 3rd Ack Packet
-      GBNSegment handshakeThirdAck =
-          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-      sendPacket(handshakeThirdAck, receiverIp, receiverPort);
-    } catch (IOException e) {
-      e.printStackTrace();
+        // Send 3rd Ack Packet
+        GBNSegment handshakeThirdAck =
+            GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+        sendPacket(handshakeThirdAck, receiverIp, receiverPort);
+      } catch (SocketTimeoutException e) {
+        this.numRetransmits++;
+        if (this.numRetransmits % 17 == 0) {
+          // exit immediately
+          return true;
+        }
+        continue;
+      }
     }
+    
+    return false;
   }
 
   public void sendData() {

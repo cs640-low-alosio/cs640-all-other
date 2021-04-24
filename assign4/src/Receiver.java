@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.HashSet;
 import java.util.PriorityQueue;
@@ -25,54 +26,69 @@ public class Receiver extends TCPEndHost {
     this.numPacketsReceived = 0;
   }
 
-  public void openConnection() {
-    try {
-      this.socket = new DatagramSocket(receiverPort);
+  public GBNSegment openConnection() throws IOException {
+    GBNSegment firstReceivedAck = null;
 
-      // Receive First Syn Packet
-      // Do this manually to get the sender IP and port
-      byte[] bytes = new byte[mtu];
-      DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu);
-      socket.receive(handshakeSynPacket);
-      byte[] handshakeSynBytes = handshakeSynPacket.getData();
-      GBNSegment handshakeSyn = new GBNSegment();
-      handshakeSyn.deserialize(handshakeSynBytes);
+    this.socket = new DatagramSocket(receiverPort);
 
-      // Verify checksum first syn packet
-      short origChk = handshakeSyn.getChecksum();
-      handshakeSyn.resetChecksum();
-      handshakeSyn.serialize();
-      short calcChk = handshakeSyn.getChecksum();
-      if (origChk != calcChk) {
-        System.out.println("Rcvr - first syn chk does not match!");
+    // Receive First Syn Packet
+    // Do this manually to get the sender IP and port
+    byte[] bytes = new byte[mtu];
+    DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu);
+    socket.receive(handshakeSynPacket);
+    byte[] handshakeSynBytes = handshakeSynPacket.getData();
+    GBNSegment handshakeSyn = new GBNSegment();
+    handshakeSyn.deserialize(handshakeSynBytes);
+
+    // Verify checksum first syn packet
+    short origChk = handshakeSyn.getChecksum();
+    handshakeSyn.resetChecksum();
+    handshakeSyn.serialize();
+    short calcChk = handshakeSyn.getChecksum();
+    if (origChk != calcChk) {
+      System.out.println("Rcvr - first syn chk does not match!");
+    }
+    if (!handshakeSyn.isSyn || handshakeSyn.isAck || handshakeSyn.isFin) {
+      System.out.println("Handshake: Rcvr - first segment doesn't have SYN flag!");
+    }
+    printOutput(handshakeSyn, false);
+    senderIp = handshakeSynPacket.getAddress();
+    senderPort = handshakeSynPacket.getPort();
+    nextByteExpected++;
+    numPacketsReceived++;
+
+    boolean isFirstAckReceived = false;
+    while (!isFirstAckReceived)
+      try {
+        // Send 2nd Syn+Ack Packet
+        GBNSegment handshakeSynAck =
+            GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
+        sendPacket(handshakeSynAck, senderIp, senderPort);
+        bsn++;
+
+        // Receive Ack Packet (3rd leg)
+        // TODO: handle case where ACK handshake packet is dropped
+        firstReceivedAck = handlePacket(socket);
+        if (!firstReceivedAck.isAck || firstReceivedAck.isFin || firstReceivedAck.isSyn) {
+          System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
+        }
+        isFirstAckReceived = true;
+      } catch (SocketTimeoutException e) {
+        this.numRetransmits++;
+        if (this.numRetransmits % 17 == 0) {
+          return null;
+        }
+        continue;
       }
-      if (!handshakeSyn.isSyn || handshakeSyn.isAck || handshakeSyn.isFin) {
-        System.out.println("Handshake: Rcvr - first segment doesn't have SYN flag!");
-      }
-      printOutput(handshakeSyn, false);
-      senderIp = handshakeSynPacket.getAddress();
-      senderPort = handshakeSynPacket.getPort();
-      nextByteExpected++;
-      numPacketsReceived++;
 
-      // Send 2nd Syn+Ack Packet
-      GBNSegment handshakeSynAck =
-          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYNACK);
-      sendPacket(handshakeSynAck, senderIp, senderPort);
-      bsn++;
-
-      // Receive Ack Packet (3rd leg)
-      // TODO: handle case where ACK handshake packet is dropped
-      GBNSegment handshakeAck = handlePacket(socket);
-      if (!handshakeAck.isAck || handshakeAck.isFin || handshakeAck.isSyn) {
-        System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
+    if (firstReceivedAck != null && firstReceivedAck.dataLength >= 0) {
+      return firstReceivedAck;
+    } else {
+      return null;
     }
   }
 
-  public void receiveDataAndClose() {
+  public void receiveDataAndClose(GBNSegment firstReceivedAck) {
     try (OutputStream out = new FileOutputStream(filename)) {
       DataOutputStream outStream = new DataOutputStream(out);
 
@@ -81,6 +97,13 @@ public class Receiver extends TCPEndHost {
       // int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
+
+      if (firstReceivedAck != null) {
+        // can happen when first ACK in handshake is dropped
+        sendBuffer.add(firstReceivedAck);
+        bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
+      }
+
       while (isOpen) {
         // Receive data
         GBNSegment data = handlePacket(socket);
@@ -89,6 +112,10 @@ public class Receiver extends TCPEndHost {
         // timestamp from the latest received packet which is causing this acknowledgment
         // should be copied into the reply.
         long mostRecentTimestamp = data.timestamp;
+        // if (data.dataLength == 0) {
+        // // could happen on third ACK during open/handshake
+        // continue;
+        // }
 
         // TODO: send duplicate ACK for non-contiguous byte
         int currBsn = data.byteSequenceNum;
@@ -174,6 +201,7 @@ public class Receiver extends TCPEndHost {
   private void closeConnection(long mostRecentTimestamp) throws IOException {
     // TODO: retransmit ACK
     boolean isLastAckReceived = false;
+    short currNumRetransmits = 0;
     while (!isLastAckReceived) {
       // GBNSegment returnAckSegment =
       // GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
@@ -192,7 +220,8 @@ public class Receiver extends TCPEndHost {
         isLastAckReceived = true;
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
-        if (this.numRetransmits % 17 == 0) {
+        currNumRetransmits++;
+        if (currNumRetransmits >= 17) {
           // exit immediately after 16 retransmit attempts
           return;
         }
