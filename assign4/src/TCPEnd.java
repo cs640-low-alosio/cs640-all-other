@@ -1,8 +1,8 @@
+import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class TCPEnd {
-  public static void main(String[] args) throws UnknownHostException {
+  public static void main(String[] args) throws IOException {
     int senderSourcePort = -1;
     int receiverPort = -1;
     InetAddress receiverIp = null;
@@ -71,6 +71,7 @@ public class TCPEnd {
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
       receiver.openConnection();
       receiver.receiveDataAndClose();
+      receiver.socket.close();
       receiver.printFinalStatsHeader();
       
       long endTime = System.nanoTime();

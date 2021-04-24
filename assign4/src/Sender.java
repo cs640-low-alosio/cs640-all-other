@@ -34,27 +34,9 @@ public class Sender extends TCPEndHost {
       GBNSegment handshakeFirstSyn =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYN);
       sendPacket(handshakeFirstSyn, receiverIp, receiverPort);
-      // byte[] handshakeSynData = handshakeSyn.serialize();
-      // DatagramPacket handshakeSynPacket =
-      // new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
-      // socket.send(handshakeSynPacket);
       bsn++;
 
       // // Receive 2nd Syn+Ack Packet
-      // byte[] hsSynAckBytes = new byte[mtu];
-      // DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
-      // socket.receive(hsSynAckPacket);
-      // hsSynAckBytes = hsSynAckPacket.getData();
-      // GBNSegment hsSynAck = new GBNSegment();
-      // hsSynAck.deserialize(hsSynAckBytes);
-      // // Verify checksum Syn+Ack packet
-      // short origChk = hsSynAck.getChecksum();
-      // hsSynAck.resetChecksum();
-      // hsSynAck.serialize();
-      // short calcChk = hsSynAck.getChecksum();
-      // if (origChk != calcChk) {
-      // System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
-      // }
       GBNSegment handshakeSecondSynAck = handlePacket(socket);
       if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
         System.out.println("Handshake: Sender - Does not have syn+ack flag");
@@ -65,10 +47,6 @@ public class Sender extends TCPEndHost {
       GBNSegment handshakeThirdAck =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
       sendPacket(handshakeThirdAck, receiverIp, receiverPort);
-      // byte[] hsAckBytes = hsAck.serialize();
-      // DatagramPacket hsAckUdp =
-      // new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
-      // socket.send(hsAckUdp);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -90,7 +68,8 @@ public class Sender extends TCPEndHost {
       int byteReadCount;
       int dupAckCount = 0;
 
-      inputStream.mark(mtu * sws + 1);
+      // inputStream.mark(mtu * sws + 1);
+      inputStream.mark(0);
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
         lastByteWritten += byteReadCount;
@@ -115,7 +94,7 @@ public class Sender extends TCPEndHost {
 
           GBNSegment dataSegment = GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
           sendPacket(dataSegment, receiverIp, receiverPort);
-          this.lastByteSent += payloadLength;
+          this.lastByteSent += payloadLength; // lastbytesent is the same as lastbytewritten?
           bsn += payloadLength;
         }
 
@@ -132,12 +111,14 @@ public class Sender extends TCPEndHost {
             int prevAck = lastByteAcked;
             lastByteAcked = currAck.ackNum - 1;
 
-            // TODO: retransmit (three duplicate acks)
-            // TODO: max retransmit counter for three duplicate ACKs
+            // Retransmit (three duplicate acks)
+            // TODO: don't care about ACKs from before either piazza@458
+            // TODO: Max retransmit counter for three duplicate ACKs
             if (prevAck == lastByteAcked) {
               dupAckCount++;
               this.numDupAcks++;
               if (dupAckCount >= 3) {
+                // TODO: Beyond 3 duplicate ACKs, do we retransmit every single time?
                 System.out.println("Snd - Dup Ack Retransmit! # retransmit: " + numRetransmits);
                 inputStream.reset();
                 // Slide the window
@@ -158,12 +139,16 @@ public class Sender extends TCPEndHost {
             // destination has been received after multiple retransmission attempts, the sending
             // host will stop trying to send the messages and report an error. This maximum is set
             // to 16 by default.
+            // TODO: exit completely
+            // TODO: java.io.IOException: Network is unreachable
+            // link h1 r1 down
             if (retransmitCounter >= 16) {
               System.out.println("Already sent 16 retransmits. Quitting!");
               e.printStackTrace();
               return;
             }
-            // Slide the window TODO: redundant code with triplicate ACK
+            // Slide the window
+            // TODO: redundant code with triplicate ACK
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
             lastByteWritten = lastByteAcked; // is this right???
@@ -177,6 +162,8 @@ public class Sender extends TCPEndHost {
         }
 
         // remove from buffer
+        // TODO: is this supposed to be lastByteWritten instead of byteReadCount? that is, absolute
+        // position in file
         inputStream.mark(byteReadCount + mtu * sws + 1);
         retransmitCounter = 0; // TODO: not sure where to reset this
       }
@@ -187,52 +174,71 @@ public class Sender extends TCPEndHost {
     }
   }
 
-  public void closeConnection() {
+  public void closeConnection() throws IOException {
     // Send FIN
-    // TODO: retransmit fin
-    try {
-
+    boolean isFinAckReceived = false;
+    short currNumRetransmits = 0;
+    while (!isFinAckReceived) {
       GBNSegment finSegment =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
       sendPacket(finSegment, receiverIp, receiverPort);
       bsn++;
 
-      // Receive ACK
-      GBNSegment returnAckSegment = handlePacket(socket);
-      if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
-        System.out.println("Error: Snd - unexpected flags!");
+      // // Receive ACK
+      // GBNSegment returnAckSegment = handlePacket(socket);
+      // if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
+      // System.out.println("Error: Snd - unexpected flags!");
+      // }
+      // Receive FIN+ACK
+      try {
+        GBNSegment returnFinSegment = handlePacket(socket);
+        if (!(returnFinSegment.isFin && returnFinSegment.isAck) || returnFinSegment.isSyn) {
+          System.out.println("Error: Snd - unexpected flags!");
+        }
+        nextByteExpected++;
+        isFinAckReceived = true;
+
+        // Send last ACK
+        GBNSegment lastAckSegment =
+            GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+        sendPacket(lastAckSegment, receiverIp, receiverPort);
+
+        // TODO: wait timeout to close connection (see lecture/book)
+        // The main thing to recognize about connection teardown is that a connection in the
+        // TIME_WAIT
+        // state cannot move to the CLOSED state until it has waited for two times the maximum
+        // amount
+        // of
+        // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this
+        // is
+        // that, while the local side of the connection has sent an ACK in response to the other
+        // side's
+        // FIN segment, it does not know that the ACK was successfully delivered. As a consequence,
+        // the
+        // other side might retransmit its FIN segment, and this second FIN segment might be delayed
+        // in
+        // the network. If the connection were allowed to move directly to the CLOSED state, then
+        // another pair of application processes might come along and open the same connection
+        // (i.e.,
+        // use the same pair of port numbers), and the delayed FIN segment from the earlier
+        // incarnation
+        // of the connection would immediately initiate the termination of the later incarnation of
+        // that
+        // connection.
+
+        // TODO: print final output
+      } catch (SocketTimeoutException e) {
+        currNumRetransmits++;
+        if (currNumRetransmits >= 17) {
+          // exit immediately after 16 retransmit attempts
+          return;
+        }
+        this.numRetransmits++;
+        continue;
       }
-      // Receive FIN
-      GBNSegment returnFinSegment = handlePacket(socket);
-      if (!returnFinSegment.isFin || returnFinSegment.isAck || returnFinSegment.isSyn) {
-        System.out.println("Error: Snd - unexpected flags!");
-      }
-      nextByteExpected++;
-
-      // Send last ACK
-      GBNSegment lastAckSegment =
-          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-      sendPacket(lastAckSegment, receiverIp, receiverPort);
-
-      // TODO: wait timeout to close connection (see lecture/book)
-      // The main thing to recognize about connection teardown is that a connection in the TIME_WAIT
-      // state cannot move to the CLOSED state until it has waited for two times the maximum amount of
-      // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this is
-      // that, while the local side of the connection has sent an ACK in response to the other side's
-      // FIN segment, it does not know that the ACK was successfully delivered. As a consequence, the
-      // other side might retransmit its FIN segment, and this second FIN segment might be delayed in
-      // the network. If the connection were allowed to move directly to the CLOSED state, then
-      // another pair of application processes might come along and open the same connection (i.e.,
-      // use the same pair of port numbers), and the delayed FIN segment from the earlier incarnation
-      // of the connection would immediately initiate the termination of the later incarnation of that
-      // connection.
-
-      // TODO: print final output
-    } catch (IOException e) {
-      // TODO: handle exception
     }
   }
-  
+
   public void printFinalStatsHeader() {
     System.out.println("TCPEnd Sender Finished==========");
     this.printFinalStats();

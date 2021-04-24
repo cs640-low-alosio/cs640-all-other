@@ -107,6 +107,7 @@ public class TCPEndHost {
     if (origChk != calcChk) {
       System.out.println("Error: Checksum does not match!");
     }
+    // TODO: discard packet if checksum doesn't match
     
     // Recalculate timeout if ACK
     if (segment.isAck && segment.dataLength == 0) {
