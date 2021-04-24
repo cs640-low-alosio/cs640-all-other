@@ -118,7 +118,7 @@ public class TCPEndHost {
         this.timeout = 2 * effRTT;
       } else {
         int sampRTT = (int) (System.nanoTime() - segment.timestamp);
-        System.out.println("sampRTT: " + effRTT + ", sys: " + System.nanoTime() + ", segment ts: " + segment.timestamp);
+        System.out.println("sampRTT: " + sampRTT + ", sys: " + System.nanoTime() + ", segment ts: " + segment.timestamp);
         int sampDev = Math.abs(sampRTT - effRTT);
         this.effRTT = (int) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
         this.effDev = (int) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
