@@ -117,6 +117,9 @@ public class Sender extends TCPEndHost {
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
             lastByteAcked = currAck.ackNum - 1;
+            if (prevAck > lastByteAcked) {
+              continue;
+            }
 
             // Retransmit (three duplicate acks)
             // TODO: do we care about previous ACKs in ack counter? - unresolved question piazza@458
