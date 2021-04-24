@@ -19,7 +19,7 @@ public class Receiver extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.timeout = INITIAL_TIMEOUT;
+    this.timeout = INITIAL_TIMEOUT_MS;
     this.lastByteReceived = 0;
     this.numPacketsSent = 0;
     this.numPacketsReceived = 0;
@@ -29,6 +29,7 @@ public class Receiver extends TCPEndHost {
     GBNSegment firstReceivedAck = null;
 
     this.socket = new DatagramSocket(receiverPort);
+    this.socket.setSoTimeout(timeout);
 
     // Receive First Syn Packet
     // Do this manually to get the sender IP and port
@@ -67,7 +68,7 @@ public class Receiver extends TCPEndHost {
 
         // Receive Ack Packet (3rd leg)
         // TODO: handle case where ACK handshake packet is dropped
-        firstReceivedAck = handlePacket(socket);
+        firstReceivedAck = handlePacket();
         if (!firstReceivedAck.isAck || firstReceivedAck.isFin || firstReceivedAck.isSyn) {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
         }
@@ -107,7 +108,7 @@ public class Receiver extends TCPEndHost {
 
       while (isOpen) {
         // Receive data
-        GBNSegment data = handlePacket(socket);
+        GBNSegment data = handlePacket();
 
         // If a client is sending a cumulative acknowledgment of several packets, the
         // timestamp from the latest received packet which is causing this acknowledgment
@@ -216,7 +217,7 @@ public class Receiver extends TCPEndHost {
       bsn++;
 
       try {
-        GBNSegment lastAckSegment = handlePacket(socket);
+        GBNSegment lastAckSegment = handlePacket();
         if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
           System.out.println("Error: Rcv - unexpected flags!");
         }

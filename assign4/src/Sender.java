@@ -18,11 +18,12 @@ public class Sender extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.timeout = INITIAL_TIMEOUT;
+    this.timeout = INITIAL_TIMEOUT_MS;
   }
 
   public boolean openConnection() throws IOException {
     this.socket = new DatagramSocket(senderSourcePort);
+    this.socket.setSoTimeout(timeout);
 
     // Send First Syn Packet
     // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
@@ -39,7 +40,7 @@ public class Sender extends TCPEndHost {
 
       // // Receive 2nd Syn+Ack Packet
       try {
-        GBNSegment handshakeSecondSynAck = handlePacket(socket);
+        GBNSegment handshakeSecondSynAck = handlePacket();
         if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
           System.out.println("Handshake: Sender - Does not have syn+ack flag");
         }
@@ -114,11 +115,11 @@ public class Sender extends TCPEndHost {
         // wait for ACKs
         while (lastByteAcked < this.lastByteSent) {
           try {
-            GBNSegment currAck = handlePacket(socket);
+            GBNSegment currAck = handlePacket();
             if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
-            this.socket.setSoTimeout((int) (timeout / 1000000));
+            
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
@@ -203,7 +204,7 @@ public class Sender extends TCPEndHost {
       // }
       // Receive FIN+ACK
       try {
-        GBNSegment returnFinSegment = handlePacket(socket);
+        GBNSegment returnFinSegment = handlePacket();
         if (!(returnFinSegment.isFin && returnFinSegment.isAck) || returnFinSegment.isSyn) {
           System.out.println("Error: Snd - unexpected flags!");
         }
