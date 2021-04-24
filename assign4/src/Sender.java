@@ -7,7 +7,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import sun.util.resources.cldr.ext.TimeZoneNames_or;
 
 public class Sender extends TCPEndHost {
 
