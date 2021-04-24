@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import sun.util.resources.cldr.ext.TimeZoneNames_or;
 
 public class Sender extends TCPEndHost {
 
@@ -113,7 +114,7 @@ public class Sender extends TCPEndHost {
             if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
-            System.out.println("new timeout: " + timeout);
+            System.out.println("new timeout: " + (int) timeout / 1000000 + ", to: " + timeout);
             this.socket.setSoTimeout((int) timeout / 1000000);
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
