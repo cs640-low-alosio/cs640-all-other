@@ -28,7 +28,7 @@ public class Receiver extends TCPEndHost {
     GBNSegment firstReceivedAck = null;
 
     this.socket = new DatagramSocket(receiverPort);
-    // this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
+    this.socket.setSoTimeout(INITIAL_TIMEOUT_MS * 17);
 
     // Receive First Syn Packet
     // Do this manually to get the sender IP and port
