@@ -207,19 +207,6 @@ public class Receiver extends TCPEndHost {
         GBNSegment lastAckSegment = handlePacket();
         if (lastAckSegment.isAck) {
           isLastAckReceived = true;
-        } else if (lastAckSegment.isFin) {
-          // this is a FIN retransmission, try resending FINACK
-          currNumRetransmits++;
-          if (currNumRetransmits >= 17) {
-            // exit immediately after 16 retransmit attempts
-            System.out.println("Max FIN retransmits!");
-            return true;
-          }
-          this.numRetransmits++;
-          bsn--;
-          continue;
-        } else {
-          System.out.println("Error: Rcv - unexpected flags!");          
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;

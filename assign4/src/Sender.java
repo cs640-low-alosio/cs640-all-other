@@ -39,22 +39,12 @@ public class Sender extends TCPEndHost {
         if (handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck) {
           nextByteExpected++;
           isSynAckReceived = true;
-        } else {
-          System.out.println("Error: expected SYNACK packet, got something else!");
-          this.numRetransmits++;
-          if (this.numRetransmits % 17 == 0) {
-            // exit immediately
-            System.out.println("Max SYN retransmits!");
-            return true;
-          }
-          bsn--;
-          continue;
+          
+          // Send 3rd Ack Packet
+          GBNSegment handshakeThirdAck =
+              GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+          sendPacket(handshakeThirdAck, receiverIp, receiverPort);
         }
-
-        // Send 3rd Ack Packet
-        GBNSegment handshakeThirdAck =
-            GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-        sendPacket(handshakeThirdAck, receiverIp, receiverPort);
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
         if (this.numRetransmits % 17 == 0) {
@@ -203,23 +193,12 @@ public class Sender extends TCPEndHost {
         if (returnFinSegment.isFin && returnFinSegment.isAck && !returnFinSegment.isSyn) {
           nextByteExpected++;
           isFinAckReceived = true;
-        } else {
-          System.out.println("Error: Expected FINACK, got something else");
-          currNumRetransmits++;
-          if (currNumRetransmits >= 17) {
-            // exit immediately after 16 retransmit attempts
-            System.out.println("Max FIN retransmits!");
-            return true;
-          }
-          this.numRetransmits++;
-          bsn--;
-          continue;
+          
+          // Send last ACK
+          GBNSegment lastAckSegment =
+              GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+          sendPacket(lastAckSegment, receiverIp, receiverPort);
         }
-
-        // Send last ACK
-        GBNSegment lastAckSegment =
-            GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-        sendPacket(lastAckSegment, receiverIp, receiverPort);
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
