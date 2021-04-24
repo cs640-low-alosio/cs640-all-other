@@ -191,18 +191,22 @@ public class Receiver extends TCPEndHost {
     short currNumRetransmits = 0;
     while (!isLastAckReceived) {
 
-      GBNSegment returnFinSegment =
+      GBNSegment returnFinAckSegment =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FINACK);
-      sendPacket(returnFinSegment, senderIp, senderPort);
+      sendPacket(returnFinAckSegment, senderIp, senderPort);
       bsn++;
 
       try {
         this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
         GBNSegment lastAckSegment = handlePacket();
-        if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
-          System.out.println("Error: Rcv - unexpected flags!");
+        if (lastAckSegment.isAck) {
+          isLastAckReceived = true;
+        } else if (lastAckSegment.isFin) {
+          // this is a FIN retransmission, try resending FINACK
+          continue;
+        } else {
+          System.out.println("Error: Rcv - unexpected flags!");          
         }
-        isLastAckReceived = true;
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
         currNumRetransmits++;
