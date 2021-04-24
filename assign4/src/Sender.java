@@ -117,10 +117,7 @@ public class Sender extends TCPEndHost {
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
             lastByteAcked = currAck.ackNum - 1;
-            if (prevAck > lastByteAcked) {
-              continue;
-            }
-
+            
             // Retransmit (three duplicate acks)
             if (prevAck == lastByteAcked) {
               dupAckCount++;
@@ -145,7 +142,6 @@ public class Sender extends TCPEndHost {
               }
             } else {
               dupAckCount = 0;
-              retransmitCounter = 0;
             }
           } catch (SocketTimeoutException e) {
             // If unacknowledged messages remain in a host's send buffer and no response from the
