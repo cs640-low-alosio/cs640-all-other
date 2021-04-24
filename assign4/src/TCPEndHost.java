@@ -13,6 +13,7 @@ public class TCPEndHost {
   public static final float ALPHA_RTTFACTOR = 0.875F;
   public static final float BETA_DEVFACTOR = 0.75F;
   public static final DecimalFormat threePlaces = new DecimalFormat("0.000");
+  public static final short MAX_RETRANSMITS = 16;
 
   protected int senderSourcePort;
   protected int receiverPort;

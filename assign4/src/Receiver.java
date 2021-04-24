@@ -73,7 +73,7 @@ public class Receiver extends TCPEndHost {
         } else {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
           this.numRetransmits++;
-          if (this.numRetransmits % 17 == 0) {
+          if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
             // exit immediately
             throw new MaxRetransmitException("Max SYNACK retransmits!");
           }
@@ -82,7 +82,7 @@ public class Receiver extends TCPEndHost {
         }
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
-        if (this.numRetransmits % 17 == 0) {
+        if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
           // exit immediately
           throw new MaxRetransmitException("Max SYNACK retransmits!");
         }
@@ -214,7 +214,7 @@ public class Receiver extends TCPEndHost {
           isLastAckReceived = true;
         } else {
           currNumRetransmits++;
-          if (currNumRetransmits >= 17) {
+          if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
             // exit immediately
             throw new MaxRetransmitException("Max FINACK retransmits!");
           }
@@ -224,7 +224,7 @@ public class Receiver extends TCPEndHost {
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
-        if (currNumRetransmits >= 17) {
+        if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
           // exit immediately
           throw new MaxRetransmitException("Max FINACK retransmits!");
         }

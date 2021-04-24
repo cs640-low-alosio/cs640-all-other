@@ -66,7 +66,7 @@ public class Sender extends TCPEndHost {
     }
   }
 
-  public void sendData() {
+  public void sendData() throws MaxRetransmitException {
     // Data Transfer
     try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(filename))) {
       DataInputStream inputStream = new DataInputStream(in);
@@ -124,9 +124,8 @@ public class Sender extends TCPEndHost {
               dupAckCount++;
               this.numDupAcks++;
               if (dupAckCount == 3) {
-                if (retransmitCounter >= 16) {
-                  System.out.println("Already sent 16 retransmits. Quitting!");
-                  return;
+                if (retransmitCounter >= MAX_RETRANSMITS) {
+                  throw new MaxRetransmitException("Max data retransmits!");
                 }
                 System.out.println("Snd - Dup Ack Retransmit! # retransmit: " + numRetransmits);
                 inputStream.reset();
@@ -151,9 +150,8 @@ public class Sender extends TCPEndHost {
             // TODO: exit completely
             // TODO: java.io.IOException: Network is unreachable
             // link h1 r1 down
-            if (retransmitCounter >= 16) {
-              System.out.println("Already sent 16 retransmits. Quitting!");
-              return;
+            if (retransmitCounter >= MAX_RETRANSMITS) {
+              throw new MaxRetransmitException("Max data retransmits!");
             }
             // Slide the window
             // Redundant code with triplicate ACK
