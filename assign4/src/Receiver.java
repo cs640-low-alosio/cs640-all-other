@@ -75,8 +75,10 @@ public class Receiver extends TCPEndHost {
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
         if (this.numRetransmits % 17 == 0) {
+          System.out.println("Max SYNACK retransmits!");
           return null;
         }
+        System.out.println("Retransmit SYNACK!" + this.numRetransmits);        
         continue;
       }
 
@@ -222,8 +224,10 @@ public class Receiver extends TCPEndHost {
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
           // TODO: exit immediately after 16 retransmit attempts
+          System.out.println("Max FINACK retransmits!");
           return;
         }
+        System.out.println("retransmit FINACK!" + currNumRetransmits);
         continue;
       }
     }

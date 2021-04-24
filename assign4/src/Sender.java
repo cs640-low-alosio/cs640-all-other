@@ -54,8 +54,11 @@ public class Sender extends TCPEndHost {
         this.numRetransmits++;
         if (this.numRetransmits % 17 == 0) {
           // exit immediately
+          System.out.println("Max SYN retransmits!");
           return true;
         }
+        
+        System.out.println("Retransmit SYN! " + this.numRetransmits);
         continue;
       }
     }
@@ -240,8 +243,10 @@ public class Sender extends TCPEndHost {
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
           // exit immediately after 16 retransmit attempts
+          System.out.println("Max FIN retransmits!");
           return;
         }
+        System.out.println("retransmit FIN! " + currNumRetransmits);
         this.numRetransmits++;
         continue;
       }
