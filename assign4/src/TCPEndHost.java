@@ -123,6 +123,7 @@ public class TCPEndHost {
         this.effRTT = (int) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
         this.effDev = (int) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
         this.timeout = this.effRTT + 4 * this.effDev;
+        System.out.println("to: " + timeout + ", eRTT: " + effRTT + ", eDev: " + effDev);
       }
       // this.socket.setSoTimeout((int) (timeout / 1000000));
     }
