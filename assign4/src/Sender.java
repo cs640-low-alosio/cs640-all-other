@@ -122,7 +122,7 @@ public class Sender extends TCPEndHost {
             if (prevAck == lastByteAcked) {
               dupAckCount++;
               this.numDupAcks++;
-              if (dupAckCount >= 3) {
+              if (dupAckCount == 3) {
                 if (retransmitCounter >= 16) {
                   System.out.println("Already sent 16 retransmits. Quitting!");
                   return;
