@@ -11,7 +11,7 @@ public class TCPEndHost {
   public static final int INITIAL_TIMEOUT_MS = 5000; // initial timeout in ms
   public static final float ALPHA_RTTFACTOR = 0.875F;
   public static final float BETA_DEVFACTOR = 0.75F;
-  
+
   protected int senderSourcePort;
   protected int receiverPort;
   protected InetAddress receiverIp;
@@ -24,7 +24,7 @@ public class TCPEndHost {
   protected int effRTT;
   protected int effDev;
   protected int timeout;
-  
+
   // Final stat counters
   protected int numPacketsSent;
   protected int numPacketsReceived;
@@ -108,7 +108,7 @@ public class TCPEndHost {
       System.out.println("Error: Checksum does not match!");
     }
     // TODO: discard packet if checksum doesn't match
-    
+
     // Recalculate timeout if ACK
     if (segment.isAck && segment.dataLength == 0) {
       if (segment.byteSequenceNum == 0) {
@@ -120,14 +120,14 @@ public class TCPEndHost {
         int sampDev = Math.abs(sampRTT - effRTT);
         this.effRTT = (int) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
         this.effDev = (int) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
-        this.timeout = this.effRTT + 4 * this.effDev; 
+        this.timeout = this.effRTT + 4 * this.effDev;
       }
-      this.socket.setSoTimeout((int) (timeout / 1000000));
+      // this.socket.setSoTimeout((int) (timeout / 1000000));
     }
-    
+
     // Final stat counters
     this.numPacketsReceived++;
-    
+
     printOutput(segment, false);
 
     return segment;
@@ -149,7 +149,7 @@ public class TCPEndHost {
     System.out.print(" " + segment.ackNum);
     System.out.println();
   }
-  
+
   public void sendPacket(GBNSegment segment, InetAddress destIp, int destPort) {
     byte[] segmentBytes = segment.serialize();
     DatagramPacket packet = new DatagramPacket(segmentBytes, segmentBytes.length, destIp, destPort);
@@ -161,7 +161,7 @@ public class TCPEndHost {
     }
     printOutput(segment, true);
   }
-  
+
   public void printFinalStats() {
     System.out.println("  Data Sent (KB): " + this.lastByteSent / 1000);
     System.out.println("  Data Received (KB) : " + this.lastByteReceived / 1000);
