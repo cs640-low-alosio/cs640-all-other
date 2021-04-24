@@ -44,6 +44,15 @@ public class Sender extends TCPEndHost {
           GBNSegment handshakeThirdAck =
               GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
           sendPacket(handshakeThirdAck, receiverIp, receiverPort);
+        } else {
+          this.numRetransmits++;
+          if (this.numRetransmits >= 17) {
+            // exit immediately after 16 retransmit attempts
+            System.out.println("Max SYN retransmits!");
+            return true;
+          }
+          bsn--;
+          continue;
         }
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
@@ -123,7 +132,6 @@ public class Sender extends TCPEndHost {
                   System.out.println("Already sent 16 retransmits. Quitting!");
                   return;
                 }
-                // TODO: Beyond 3 duplicate ACKs, do we retransmit every single time?
                 System.out.println("Snd - Dup Ack Retransmit! # retransmit: " + numRetransmits);
                 inputStream.reset();
                 // Slide the window
@@ -199,6 +207,12 @@ public class Sender extends TCPEndHost {
               GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
           sendPacket(lastAckSegment, receiverIp, receiverPort);
         } else {
+          currNumRetransmits++;
+          if (currNumRetransmits >= 17) {
+            // exit immediately after 16 retransmit attempts
+            System.out.println("Max FIN retransmits!");
+            return true;
+          }
           this.numRetransmits++;
           bsn--;
           continue;

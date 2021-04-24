@@ -213,6 +213,12 @@ public class Receiver extends TCPEndHost {
         if (lastAckSegment.isAck) {
           isLastAckReceived = true;
         } else {
+          currNumRetransmits++;
+          if (currNumRetransmits >= 17) {
+            // exit immediately after 16 retransmit attempts
+            System.out.println("Max FIN retransmits!");
+            return true;
+          }
           this.numRetransmits++;
           bsn--;
           continue;
