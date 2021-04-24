@@ -212,6 +212,9 @@ public class Receiver extends TCPEndHost {
         GBNSegment lastAckSegment = handlePacket();
         if (lastAckSegment.isAck) {
           isLastAckReceived = true;
+        } else {
+          this.numRetransmits++;
+          bsn--;
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
@@ -223,7 +226,6 @@ public class Receiver extends TCPEndHost {
         System.out.println("retransmit FINACK!" + currNumRetransmits);
         this.numRetransmits++;
         bsn--;
-        continue;
       }
     }
     return false;

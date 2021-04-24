@@ -198,6 +198,9 @@ public class Sender extends TCPEndHost {
           GBNSegment lastAckSegment =
               GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
           sendPacket(lastAckSegment, receiverIp, receiverPort);
+        } else {
+          this.numRetransmits++;
+          bsn--;
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
