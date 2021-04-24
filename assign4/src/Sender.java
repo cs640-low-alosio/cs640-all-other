@@ -23,7 +23,7 @@ public class Sender extends TCPEndHost {
 
   public boolean openConnection() throws IOException {
     this.socket = new DatagramSocket(senderSourcePort);
-    this.socket.setSoTimeout(timeout);
+    this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
 
     // Send First Syn Packet
     // piazza@395
@@ -114,7 +114,8 @@ public class Sender extends TCPEndHost {
             if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
-            this.socket.setSoTimeout((int) (timeout / 1000000));
+            System.out.println("new timeout: " + timeout);
+            this.socket.setSoTimeout(timeout / 1000000);
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
