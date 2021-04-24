@@ -173,12 +173,12 @@ public class Sender extends TCPEndHost {
             this.numRetransmits++;
             break; // exit wait ACK loop
           }
+          retransmitCounter = 0; // TODO: not sure where to reset this
         }
 
         // remove from buffer
         // position in file
         inputStream.mark(mtu * sws);
-        retransmitCounter = 0; // TODO: not sure where to reset this
       }
     } catch (FileNotFoundException e) {
       e.printStackTrace();
