@@ -21,9 +21,9 @@ public class TCPEndHost {
   protected int bsn;
   protected int nextByteExpected;
   protected DatagramSocket socket;
-  protected int effRTT;
-  protected int effDev;
-  protected int timeout;
+  protected long effRTT;
+  protected long effDev;
+  protected long timeout;
 
   // Final stat counters
   protected int numPacketsSent;
@@ -112,16 +112,16 @@ public class TCPEndHost {
     // Recalculate timeout if ACK
     if (segment.isAck && segment.dataLength == 0) {
       if (segment.byteSequenceNum == 0) {
-        this.effRTT = (int) (System.nanoTime() - segment.timestamp);
+        this.effRTT = (long) (System.nanoTime() - segment.timestamp);
         System.out.println("effRTT: " + effRTT + ", sys: " + System.nanoTime() + ", segment ts: " + segment.timestamp);
         this.effDev = 0;
         this.timeout = 2 * effRTT;
       } else {
-        int sampRTT = (int) (System.nanoTime() - segment.timestamp);
+        long sampRTT = (long) (System.nanoTime() - segment.timestamp);
         System.out.println("sampRTT: " + sampRTT + ", sys: " + System.nanoTime() + ", segment ts: " + segment.timestamp);
-        int sampDev = Math.abs(sampRTT - effRTT);
-        this.effRTT = (int) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
-        this.effDev = (int) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
+        long sampDev = Math.abs(sampRTT - effRTT);
+        this.effRTT = (long) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
+        this.effDev = (long) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
         this.timeout = this.effRTT + 4 * this.effDev;
         System.out.println("to: " + timeout + ", eRTT: " + effRTT + ", eDev: " + effDev);
       }

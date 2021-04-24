@@ -18,7 +18,6 @@ public class Sender extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.timeout = INITIAL_TIMEOUT_MS;
   }
 
   public boolean openConnection() throws IOException {
@@ -115,7 +114,7 @@ public class Sender extends TCPEndHost {
               System.out.println("Error: Snd - unexpected flags!");
             }
             System.out.println("new timeout: " + timeout);
-            this.socket.setSoTimeout(timeout / 1000000);
+            this.socket.setSoTimeout((int) timeout / 1000000);
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;

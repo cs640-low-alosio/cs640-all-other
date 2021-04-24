@@ -19,7 +19,6 @@ public class Receiver extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.timeout = INITIAL_TIMEOUT_MS;
     this.lastByteReceived = 0;
     this.numPacketsSent = 0;
     this.numPacketsReceived = 0;
