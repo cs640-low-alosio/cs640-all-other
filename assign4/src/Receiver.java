@@ -56,8 +56,7 @@ public class Receiver extends TCPEndHost {
       nextByteExpected++;
       numPacketsReceived++;
     } else {
-      throw new UnexpectedFlagException("Expected SYN flags! Got Syn" + handshakeSyn.isSyn + ", Ack: "
-          + handshakeSyn.isAck + ", Fin: " + handshakeSyn.isFin);
+      throw new UnexpectedFlagException("Expected SYN flags!", handshakeSyn);
     }
 
 
@@ -117,8 +116,8 @@ public class Receiver extends TCPEndHost {
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
       
-      if (firstReceivedAck != null && firstReceivedAck.isAck && firstReceivedAck.dataLength >= 0) {
-        // can happen if handshake ACK is lost
+      if (firstReceivedAck != null && firstReceivedAck.isAck && firstReceivedAck.dataLength > 0) {
+        // if handshake ACK is lost, then the first ACK might contain data.
         sendBuffer.add(firstReceivedAck);
         bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
       }
@@ -180,7 +179,7 @@ public class Receiver extends TCPEndHost {
                   bsnBufferSet.remove(minSegment.byteSequenceNum);
                   isOpen = false;
                 } else {
-                  System.out.println("Error: Rcv - unexpected flags!");
+                  throw new UnexpectedFlagException("Expected ACK and data or FIN!", minSegment);
                 }
               } else {
                 // Reconstruct file and send ACK
@@ -208,6 +207,8 @@ public class Receiver extends TCPEndHost {
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     } catch (IOException e) {
+      e.printStackTrace();
+    } catch (UnexpectedFlagException e) {
       e.printStackTrace();
     }
   }

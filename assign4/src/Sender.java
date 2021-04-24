@@ -123,7 +123,7 @@ public class Sender extends TCPEndHost {
             }
             
             if (!currAck.isAck) {
-              System.out.println("Error: Snd - unexpected flags!");
+              throw new UnexpectedFlagException("Expected ACK!", currAck);
             }
             this.socket.setSoTimeout((int) (timeout / 1000000));
 
@@ -158,6 +158,9 @@ public class Sender extends TCPEndHost {
             lastByteWritten = this.lastByteSent;
             currRetransmit++;
             break; // exit wait ACK loop
+          } catch (UnexpectedFlagException e) {
+            e.printStackTrace();
+            continue;
           }
           // reset counter because we made it through the window without retrasmission
           currRetransmit = 0;
