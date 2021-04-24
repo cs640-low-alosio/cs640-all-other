@@ -73,7 +73,20 @@ public class TCPEnd {
 
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
       try {
-        GBNSegment firstAckReceived = receiver.openConnection();
+        boolean isConnected = false;
+        GBNSegment firstAckReceived = null;
+        while (!isConnected) {
+          try {
+            firstAckReceived = receiver.openConnection();
+          } catch (SegmentChecksumMismatchException e) {
+            e.printStackTrace();
+            continue;
+          } catch (UnexpectedFlagException e) {
+            e.printStackTrace();
+            continue;
+          }
+          isConnected = true;
+        }
         receiver.receiveDataAndClose(firstAckReceived);
       } catch (MaxRetransmitException e) {
         e.printStackTrace();

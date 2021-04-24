@@ -35,7 +35,14 @@ public class Sender extends TCPEndHost {
 
       // // Receive 2nd Syn+Ack Packet
       try {
-        GBNSegment handshakeSecondSynAck = handlePacket();
+        GBNSegment handshakeSecondSynAck;
+        try {
+          handshakeSecondSynAck = handlePacket();
+        }catch (SegmentChecksumMismatchException e) {
+          e.printStackTrace();
+          continue;
+        }
+        
         if (handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck) {
           nextByteExpected++;
           isSynAckReceived = true;
@@ -46,8 +53,7 @@ public class Sender extends TCPEndHost {
           sendPacket(handshakeThirdAck, receiverIp, receiverPort);
         } else {
           this.numRetransmits++;
-          if (this.numRetransmits >= 17) {
-            // exit immediately
+          if (this.numRetransmits >= (MAX_RETRANSMITS + 1)) {
             throw new MaxRetransmitException("Max SYN retransmits!");
           }
           bsn--;
@@ -55,8 +61,7 @@ public class Sender extends TCPEndHost {
         }
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
-        if (this.numRetransmits % 17 == 0) {
-          // exit immediately
+        if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
           throw new MaxRetransmitException("Max SYN retransmits!");
         }
         bsn--;
@@ -75,9 +80,9 @@ public class Sender extends TCPEndHost {
       // Initial filling up send buffer
       int lastByteAcked = 0;
       int lastByteWritten = 0;
-      short retransmitCounter = 0;
+      short currRetransmit = 0;
       int byteReadCount;
-      int dupAckCount = 0;
+      int currDupAck = 0;
 
       inputStream.mark(mtu * sws);
       // fill up entire sendbuffer, which is currently = sws
@@ -109,7 +114,14 @@ public class Sender extends TCPEndHost {
         // wait for ACKs
         while (lastByteAcked < this.lastByteSent) {
           try {
-            GBNSegment currAck = handlePacket();
+            GBNSegment currAck;
+            try {
+              currAck = handlePacket();
+            } catch (SegmentChecksumMismatchException e) {
+              e.printStackTrace();
+              continue;
+            }
+            
             if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
@@ -121,52 +133,34 @@ public class Sender extends TCPEndHost {
             
             // Retransmit (three duplicate acks)
             if (prevAck == lastByteAcked) {
-              dupAckCount++;
+              currDupAck++;
               this.numDupAcks++;
-              if (dupAckCount == 3) {
-                if (retransmitCounter >= MAX_RETRANSMITS) {
+              if (currDupAck == 3) {
+                if (currRetransmit >= MAX_RETRANSMITS) {
                   throw new MaxRetransmitException("Max data retransmits!");
                 }
-                System.out.println("Snd - Dup Ack Retransmit! # retransmit: " + numRetransmits);
-                inputStream.reset();
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
-                inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-                lastByteWritten = lastByteAcked;
-                this.lastByteSent = lastByteAcked;
-                this.bsn = lastByteAcked + 1;
-                retransmitCounter++;
-                this.numRetransmits++;
+                slideWindow(inputStream, lastByteAcked, lastByteWritten, byteReadCount);
+                lastByteWritten = this.lastByteSent;
+                currRetransmit++;
                 break; // exit wait ACK loop
               }
             } else {
-              dupAckCount = 0;
+              currDupAck = 0;
             }
           } catch (SocketTimeoutException e) {
-            // If unacknowledged messages remain in a host's send buffer and no response from the
-            // destination has been received after multiple retransmission attempts, the sending
-            // host will stop trying to send the messages and report an error. This maximum is set
-            // to 16 by default.
-            // TODO: exit completely
-            // TODO: java.io.IOException: Network is unreachable
-            // link h1 r1 down
-            if (retransmitCounter >= MAX_RETRANSMITS) {
+            if (currRetransmit >= MAX_RETRANSMITS) {
               throw new MaxRetransmitException("Max data retransmits!");
             }
-            // Slide the window
-            // Redundant code with triplicate ACK
-            inputStream.reset();
-            inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-            lastByteWritten = lastByteAcked;
-            this.lastByteSent = lastByteAcked;
-            this.bsn = lastByteAcked + 1;
-            System.out.println("Snd - TO Retransmit! # curr retransmit: " + retransmitCounter);
-            retransmitCounter++;
-            this.numRetransmits++;
+            // Slide the window and retransmit after timeout
+            slideWindow(inputStream, lastByteAcked, lastByteWritten, byteReadCount);
+            lastByteWritten = this.lastByteSent;
+            currRetransmit++;
             break; // exit wait ACK loop
           }
           // reset counter because we made it through the window without retrasmission
-          retransmitCounter = 0;
+          currRetransmit = 0;
         }
 
         // remove from buffer; mark position in file
@@ -177,6 +171,14 @@ public class Sender extends TCPEndHost {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  private void slideWindow(DataInputStream inputStream, int lastByteAcked, int lastByteWritten, int byteReadCount) throws IOException {
+    inputStream.reset();
+    inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
+    this.lastByteSent = lastByteAcked;
+    this.bsn = lastByteAcked + 1;
+    this.numRetransmits++;
   }
 
   public void closeConnection() throws IOException, MaxRetransmitException {
@@ -191,7 +193,14 @@ public class Sender extends TCPEndHost {
 
       // Receive FIN+ACK
       try {
-        GBNSegment returnFinAckSegment = handlePacket();
+        GBNSegment returnFinAckSegment;
+        try {
+          returnFinAckSegment = handlePacket();
+        } catch (SegmentChecksumMismatchException e) {
+          e.printStackTrace();
+          continue;
+        }
+        
         if (returnFinAckSegment.isFin && returnFinAckSegment.isAck && !returnFinAckSegment.isSyn) {
           nextByteExpected++;
           isFinAckReceived = true;
@@ -202,8 +211,7 @@ public class Sender extends TCPEndHost {
           sendPacket(lastAckSegment, receiverIp, receiverPort);
         } else {
           currNumRetransmits++;
-          if (currNumRetransmits >= 17) {
-            // exit immediately
+          if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
             throw new MaxRetransmitException("Max FIN retransmits!");
           }
           this.numRetransmits++;
@@ -212,8 +220,7 @@ public class Sender extends TCPEndHost {
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
-        if (currNumRetransmits >= 17) {
-          // exit immediately
+        if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
           throw new MaxRetransmitException("Max FIN retransmits!");
         }
         System.out.println("retransmit FIN! " + currNumRetransmits);

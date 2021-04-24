@@ -93,7 +93,7 @@ public class TCPEndHost {
     this.bsn = bsn;
   }
 
-  public GBNSegment handlePacket() throws IOException {
+  public GBNSegment handlePacket() throws IOException, SegmentChecksumMismatchException {
     // Receive packet
     byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
     DatagramPacket packet = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
@@ -108,9 +108,9 @@ public class TCPEndHost {
     segment.serialize();
     short calcChk = segment.getChecksum();
     if (origChk != calcChk) {
-      System.out.println("Error: Checksum does not match!");
+      // discard packet if checksum doesn't match
+      throw new SegmentChecksumMismatchException("Error: Checksum does not match!");
     }
-    // TODO: discard packet if checksum doesn't match
 
     // Recalculate timeout if ACK
     if (segment.isAck && segment.dataLength == 0) {
