@@ -36,11 +36,13 @@ public class Sender extends TCPEndHost {
       // // Receive 2nd Syn+Ack Packet
       try {
         GBNSegment handshakeSecondSynAck = handlePacket();
-        if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
-          System.out.println("Handshake: Sender - Does not have syn+ack flag");
+        if (handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck) {
+          nextByteExpected++;
+          isSynAckReceived = true;
+        } else {
+          System.out.println("Error: expected SYNACK packet, got something else!");
+          continue;
         }
-        nextByteExpected++;
-        isSynAckReceived = true;
 
         // Send 3rd Ack Packet
         GBNSegment handshakeThirdAck =
@@ -129,16 +131,15 @@ public class Sender extends TCPEndHost {
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
                 inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-                lastByteWritten = lastByteAcked; // is this right???
-                this.lastByteSent = lastByteAcked; // is this right???
-                this.bsn = lastByteAcked + 1; // is this right???
+                lastByteWritten = lastByteAcked;
+                this.lastByteSent = lastByteAcked;
+                this.bsn = lastByteAcked + 1;
                 this.numRetransmits++;
                 break; // exit wait ACK loop
               }
             } else {
               dupAckCount = 0;
             }
-            // TODO: Nagle's algorithm?
           } catch (SocketTimeoutException e) {
             // If unacknowledged messages remain in a host's send buffer and no response from the
             // destination has been received after multiple retransmission attempts, the sending
@@ -156,9 +157,9 @@ public class Sender extends TCPEndHost {
             // Redundant code with triplicate ACK
             inputStream.reset();
             inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-            lastByteWritten = lastByteAcked; // is this right???
-            this.lastByteSent = lastByteAcked; // is this right???
-            this.bsn = lastByteAcked + 1; // is this right???
+            lastByteWritten = lastByteAcked;
+            this.lastByteSent = lastByteAcked;
+            this.bsn = lastByteAcked + 1;
             System.out.println("Snd - TO Retransmit! # curr retransmit: " + retransmitCounter);
             retransmitCounter++;
             this.numRetransmits++;
@@ -230,8 +231,6 @@ public class Sender extends TCPEndHost {
         // of the connection would immediately initiate the termination of the later incarnation of
         // that
         // connection.
-
-        // TODO: print final output
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {

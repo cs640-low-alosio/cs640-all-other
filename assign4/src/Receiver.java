@@ -68,10 +68,12 @@ public class Receiver extends TCPEndHost {
 
         // Receive Ack Packet (3rd leg)
         firstReceivedAck = handlePacket();
-        if (!firstReceivedAck.isAck || firstReceivedAck.isFin || firstReceivedAck.isSyn) {
+        if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn){
+          isFirstAckReceived = true;          
+        } else {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
+          continue;
         }
-        isFirstAckReceived = true;
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
         if (this.numRetransmits % 17 == 0) {
