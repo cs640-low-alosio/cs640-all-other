@@ -72,6 +72,12 @@ public class Receiver extends TCPEndHost {
           isFirstAckReceived = true;
         } else {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
+          this.numRetransmits++;
+          if (this.numRetransmits % 17 == 0) {
+            // exit immediately
+            System.out.println("Max SYN retransmits!");
+            return null;
+          }
           bsn--;
           continue;
         }
@@ -203,12 +209,19 @@ public class Receiver extends TCPEndHost {
           isLastAckReceived = true;
         } else if (lastAckSegment.isFin) {
           // this is a FIN retransmission, try resending FINACK
+          currNumRetransmits++;
+          if (currNumRetransmits >= 17) {
+            // exit immediately after 16 retransmit attempts
+            System.out.println("Max FIN retransmits!");
+            return true;
+          }
+          this.numRetransmits++;
+          bsn--;
           continue;
         } else {
           System.out.println("Error: Rcv - unexpected flags!");          
         }
       } catch (SocketTimeoutException e) {
-        this.numRetransmits++;
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
           // TODO: exit immediately after 16 retransmit attempts
@@ -216,6 +229,7 @@ public class Receiver extends TCPEndHost {
           return true;
         }
         System.out.println("retransmit FINACK!" + currNumRetransmits);
+        this.numRetransmits++;
         bsn--;
         continue;
       }

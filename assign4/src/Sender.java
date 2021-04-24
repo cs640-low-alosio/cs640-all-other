@@ -41,6 +41,12 @@ public class Sender extends TCPEndHost {
           isSynAckReceived = true;
         } else {
           System.out.println("Error: expected SYNACK packet, got something else!");
+          this.numRetransmits++;
+          if (this.numRetransmits % 17 == 0) {
+            // exit immediately
+            System.out.println("Max SYN retransmits!");
+            return true;
+          }
           bsn--;
           continue;
         }
@@ -194,11 +200,21 @@ public class Sender extends TCPEndHost {
       // Receive FIN+ACK
       try {
         GBNSegment returnFinSegment = handlePacket();
-        if (!(returnFinSegment.isFin && returnFinSegment.isAck) || returnFinSegment.isSyn) {
-          System.out.println("Error: Snd - unexpected flags!");
+        if (returnFinSegment.isFin && returnFinSegment.isAck && !returnFinSegment.isSyn) {
+          nextByteExpected++;
+          isFinAckReceived = true;
+        } else {
+          System.out.println("Error: Expected FINACK, got something else");
+          currNumRetransmits++;
+          if (currNumRetransmits >= 17) {
+            // exit immediately after 16 retransmit attempts
+            System.out.println("Max FIN retransmits!");
+            return true;
+          }
+          this.numRetransmits++;
+          bsn--;
+          continue;
         }
-        nextByteExpected++;
-        isFinAckReceived = true;
 
         // Send last ACK
         GBNSegment lastAckSegment =
