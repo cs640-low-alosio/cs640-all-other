@@ -122,7 +122,6 @@ public class Sender extends TCPEndHost {
             }
 
             // Retransmit (three duplicate acks)
-            // TODO: do we care about previous ACKs in ack counter? - unresolved question piazza@458
             if (prevAck == lastByteAcked) {
               dupAckCount++;
               this.numDupAcks++;
@@ -146,6 +145,7 @@ public class Sender extends TCPEndHost {
               }
             } else {
               dupAckCount = 0;
+              retransmitCounter = 0;
             }
           } catch (SocketTimeoutException e) {
             // If unacknowledged messages remain in a host's send buffer and no response from the

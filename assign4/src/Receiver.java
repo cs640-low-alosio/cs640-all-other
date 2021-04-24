@@ -28,7 +28,7 @@ public class Receiver extends TCPEndHost {
     GBNSegment firstReceivedAck = null;
 
     this.socket = new DatagramSocket(receiverPort);
-    this.socket.setSoTimeout(INITIAL_TIMEOUT_MS * 17);
+    this.socket.setSoTimeout(0);
 
     // Receive First Syn Packet
     // Do this manually to get the sender IP and port
@@ -104,6 +104,7 @@ public class Receiver extends TCPEndHost {
 
       while (isOpen) {
         // Receive data
+        this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
         GBNSegment data = handlePacket();
 
         // If a client is sending a cumulative acknowledgment of several packets, the
@@ -196,6 +197,7 @@ public class Receiver extends TCPEndHost {
       bsn++;
 
       try {
+        this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
         GBNSegment lastAckSegment = handlePacket();
         if (!lastAckSegment.isAck || lastAckSegment.isFin || lastAckSegment.isSyn) {
           System.out.println("Error: Rcv - unexpected flags!");
