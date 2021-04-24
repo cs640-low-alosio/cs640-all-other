@@ -119,12 +119,15 @@ public class Sender extends TCPEndHost {
             lastByteAcked = currAck.ackNum - 1;
 
             // Retransmit (three duplicate acks)
-            // TODO: don't care about ACKs from before either - unresolved question piazza@458
-            // TODO: Max retransmit counter for three duplicate ACKs
+            // TODO: do we care about previous ACKs in ack counter? - unresolved question piazza@458
             if (prevAck == lastByteAcked) {
               dupAckCount++;
               this.numDupAcks++;
               if (dupAckCount >= 3) {
+                if (retransmitCounter >= 16) {
+                  System.out.println("Already sent 16 retransmits. Quitting!");
+                  return;
+                }
                 // TODO: Beyond 3 duplicate ACKs, do we retransmit every single time?
                 System.out.println("Snd - Dup Ack Retransmit! # retransmit: " + numRetransmits);
                 inputStream.reset();
@@ -134,6 +137,7 @@ public class Sender extends TCPEndHost {
                 lastByteWritten = lastByteAcked;
                 this.lastByteSent = lastByteAcked;
                 this.bsn = lastByteAcked + 1;
+                retransmitCounter++;
                 this.numRetransmits++;
                 break; // exit wait ACK loop
               }
@@ -150,7 +154,6 @@ public class Sender extends TCPEndHost {
             // link h1 r1 down
             if (retransmitCounter >= 16) {
               System.out.println("Already sent 16 retransmits. Quitting!");
-              e.printStackTrace();
               return;
             }
             // Slide the window
