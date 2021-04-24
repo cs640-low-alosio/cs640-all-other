@@ -79,8 +79,7 @@ public class Sender extends TCPEndHost {
       int byteReadCount;
       int dupAckCount = 0;
 
-      // inputStream.mark(mtu * sws + 1);
-      inputStream.mark(0);
+      inputStream.mark(mtu * sws);
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
         lastByteWritten += byteReadCount;
@@ -173,9 +172,8 @@ public class Sender extends TCPEndHost {
         }
 
         // remove from buffer
-        // TODO: is this supposed to be lastByteWritten instead of byteReadCount? that is, absolute
         // position in file
-        inputStream.mark(byteReadCount + mtu * sws + 1);
+        inputStream.mark(mtu * sws);
         retransmitCounter = 0; // TODO: not sure where to reset this
       }
     } catch (FileNotFoundException e) {
