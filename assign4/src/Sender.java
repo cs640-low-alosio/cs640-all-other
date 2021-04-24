@@ -184,7 +184,7 @@ public class Sender extends TCPEndHost {
     this.numRetransmits++;
   }
 
-  public void closeConnection() throws IOException, MaxRetransmitException {
+  public void closeConnection() throws IOException, MaxRetransmitException, UnexpectedFlagException {
     // Send FIN
     boolean isFinAckReceived = false;
     short currNumRetransmits = 0;
@@ -214,13 +214,7 @@ public class Sender extends TCPEndHost {
               GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
           sendPacket(lastAckSegment, receiverIp, receiverPort);
         } else {
-          currNumRetransmits++;
-          if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
-            throw new MaxRetransmitException("Max FIN retransmits!");
-          }
-          this.numRetransmits++;
-          bsn--;
-          continue;
+          throw new UnexpectedFlagException();
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;

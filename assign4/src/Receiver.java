@@ -153,6 +153,11 @@ public class Receiver extends TCPEndHost {
           // When this condition was part of the discard out-of-order packet
           // and send ACK case above, we were sending a ton of duplicate ACKs which was causing
           // a ton of extra traffic
+          System.err.println("Rcv - discard out-of-order packet!!!");
+          GBNSegment ackSegment =
+              GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
+          sendPacket(ackSegment, senderIp, senderPort);
+          numDiscardPackets++;
           continue;
         } else {
           // Add packets to buffer if within sliding window size
@@ -214,7 +219,7 @@ public class Receiver extends TCPEndHost {
   }
 
   private void closeConnection(long mostRecentTimestamp)
-      throws IOException, MaxRetransmitException {
+      throws IOException, MaxRetransmitException, UnexpectedFlagException {
     boolean isLastAckReceived = false;
     short currNumRetransmits = 0;
     while (!isLastAckReceived) {
@@ -237,14 +242,7 @@ public class Receiver extends TCPEndHost {
         if (lastAckSegment.isAck) {
           isLastAckReceived = true;
         } else {
-          currNumRetransmits++;
-          if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
-            // exit immediately
-            throw new MaxRetransmitException("Max FINACK retransmits!");
-          }
-          this.numRetransmits++;
-          bsn--;
-          continue;
+          throw new UnexpectedFlagException();
         }
       } catch (SocketTimeoutException e) {
         currNumRetransmits++;

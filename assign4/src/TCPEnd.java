@@ -43,6 +43,8 @@ public class TCPEnd {
         sender.closeConnection();
       } catch (MaxRetransmitException e) {
         e.printStackTrace();
+      } catch (UnexpectedFlagException e) {
+        e.printStackTrace();
       } finally {
         sender.socket.close();
         sender.printFinalStatsHeader();
