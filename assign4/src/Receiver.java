@@ -222,7 +222,7 @@ public class Receiver extends TCPEndHost {
         this.numRetransmits++;
         currNumRetransmits++;
         if (currNumRetransmits >= 17) {
-          // exit immediately after 16 retransmit attempts
+          // TODO: exit immediately after 16 retransmit attempts
           return;
         }
         continue;

@@ -73,8 +73,8 @@ public class TCPEnd {
       long startTime = System.nanoTime();
       
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
-      receiver.openConnection();
-      receiver.receiveDataAndClose();
+      GBNSegment firstAckReceived = receiver.openConnection();
+      receiver.receiveDataAndClose(firstAckReceived);
       receiver.socket.close();
       receiver.printFinalStatsHeader();
       
