@@ -54,7 +54,7 @@ public class Sender extends TCPEndHost {
           System.out.println("Max SYN retransmits!");
           return true;
         }
-
+        bsn--;
         System.out.println("Retransmit SYN! " + this.numRetransmits);
         continue;
       }
@@ -245,6 +245,7 @@ public class Sender extends TCPEndHost {
         }
         System.out.println("retransmit FIN! " + currNumRetransmits);
         this.numRetransmits++;
+        bsn--;
         continue;
       }
     }

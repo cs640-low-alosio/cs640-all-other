@@ -78,7 +78,8 @@ public class Receiver extends TCPEndHost {
           System.out.println("Max SYNACK retransmits!");
           return null;
         }
-        System.out.println("Retransmit SYNACK!" + this.numRetransmits);        
+        System.out.println("Retransmit SYNACK!" + this.numRetransmits);
+        bsn--;
         continue;
       }
 
@@ -217,6 +218,7 @@ public class Receiver extends TCPEndHost {
           return true;
         }
         System.out.println("retransmit FINACK!" + currNumRetransmits);
+        bsn--;
         continue;
       }
     }
