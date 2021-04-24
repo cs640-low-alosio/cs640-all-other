@@ -113,8 +113,8 @@ public class Sender extends TCPEndHost {
             if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
-            System.out.println("new timeout: " + (int) timeout / 1000000 + ", to: " + timeout);
-            this.socket.setSoTimeout((int) timeout / 1000000);
+            System.out.println("new timeout: " + (int) (timeout / 1000000) + ", to: " + timeout);
+            this.socket.setSoTimeout((int) (timeout / 1000000));
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
