@@ -156,9 +156,11 @@ public class Receiver extends TCPEndHost {
                                                                           // on close
 
                 if (minSegment.isFin) {
-                  isOpen = false;
 
                   closeConnection(mostRecentTimestamp);
+                  sendBuffer.remove(minSegment);
+                  bsnBufferSet.remove(minSegment.byteSequenceNum);
+                  isOpen = false;
                 } else {
                   System.out.println("Error: Rcv - unexpected flags!");
                 }
