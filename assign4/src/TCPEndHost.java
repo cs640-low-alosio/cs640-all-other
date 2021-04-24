@@ -113,17 +113,19 @@ public class TCPEndHost {
     if (segment.isAck && segment.dataLength == 0) {
       if (segment.byteSequenceNum == 0) {
         this.effRTT = (long) (System.nanoTime() - segment.timestamp);
-        System.out.println("effRTT: " + effRTT + ", sys: " + System.nanoTime() + ", segment ts: " + segment.timestamp);
+        // System.out.println("effRTT: " + effRTT + ", sys: " + System.nanoTime() + ", segment ts: "
+        // + segment.timestamp);
         this.effDev = 0;
         this.timeout = 2 * effRTT;
       } else {
         long sampRTT = (long) (System.nanoTime() - segment.timestamp);
-        System.out.println("sampRTT: " + sampRTT + ", sys: " + System.nanoTime() + ", segment ts: " + segment.timestamp);
+        // System.out.println("sampRTT: " + sampRTT + ", sys: " + System.nanoTime() + ", segment ts:
+        // " + segment.timestamp);
         long sampDev = Math.abs(sampRTT - effRTT);
         this.effRTT = (long) (ALPHA_RTTFACTOR * effRTT + (1 - ALPHA_RTTFACTOR) * sampRTT);
         this.effDev = (long) (BETA_DEVFACTOR * effDev + (1 - BETA_DEVFACTOR) * sampDev);
         this.timeout = this.effRTT + 4 * this.effDev;
-        System.out.println("to: " + timeout + ", eRTT: " + effRTT + ", eDev: " + effDev);
+        // System.out.println("to: " + timeout + ", eRTT: " + effRTT + ", eDev: " + effDev);
       }
       // this.socket.setSoTimeout((int) (timeout / 1000000));
     }

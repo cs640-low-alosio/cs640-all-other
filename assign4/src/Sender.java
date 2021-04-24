@@ -26,7 +26,6 @@ public class Sender extends TCPEndHost {
 
     // Send First Syn Packet
     // piazza@395
-    // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
     boolean isSynAckReceived = false;
     while (!isSynAckReceived) {
       GBNSegment handshakeFirstSyn =
@@ -73,9 +72,6 @@ public class Sender extends TCPEndHost {
       int lastByteAcked = 0;
       int lastByteWritten = 0;
       short retransmitCounter = 0;
-      // int tempLastByteWritten = 0;
-      // int effectiveWindow = 0;
-      // int advertisedWindow = sws;
       int byteReadCount;
       int dupAckCount = 0;
 
@@ -113,7 +109,7 @@ public class Sender extends TCPEndHost {
             if (!currAck.isAck) {
               System.out.println("Error: Snd - unexpected flags!");
             }
-            System.out.println("new timeout: " + (int) (timeout / 1000000) + ", to: " + timeout);
+            // System.out.println("new timeout: " + (int) (timeout / 1000000) + ", to: " + timeout);
             this.socket.setSoTimeout((int) (timeout / 1000000));
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
@@ -121,7 +117,7 @@ public class Sender extends TCPEndHost {
             lastByteAcked = currAck.ackNum - 1;
 
             // Retransmit (three duplicate acks)
-            // TODO: don't care about ACKs from before either piazza@458
+            // TODO: don't care about ACKs from before either - unresolved question piazza@458
             // TODO: Max retransmit counter for three duplicate ACKs
             if (prevAck == lastByteAcked) {
               dupAckCount++;

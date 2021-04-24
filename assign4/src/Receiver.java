@@ -28,12 +28,13 @@ public class Receiver extends TCPEndHost {
     GBNSegment firstReceivedAck = null;
 
     this.socket = new DatagramSocket(receiverPort);
-    this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
+    // this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
 
     // Receive First Syn Packet
     // Do this manually to get the sender IP and port
     byte[] bytes = new byte[mtu + GBNSegment.HEADER_LENGTH_BYTES];
-    DatagramPacket handshakeSynPacket = new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
+    DatagramPacket handshakeSynPacket =
+        new DatagramPacket(bytes, mtu + GBNSegment.HEADER_LENGTH_BYTES);
     socket.receive(handshakeSynPacket);
     byte[] handshakeSynBytes = handshakeSynPacket.getData();
     GBNSegment handshakeSyn = new GBNSegment();
@@ -66,7 +67,6 @@ public class Receiver extends TCPEndHost {
         bsn++;
 
         // Receive Ack Packet (3rd leg)
-        // TODO: handle case where ACK handshake packet is dropped
         firstReceivedAck = handlePacket();
         if (!firstReceivedAck.isAck || firstReceivedAck.isFin || firstReceivedAck.isSyn) {
           System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
@@ -99,12 +99,6 @@ public class Receiver extends TCPEndHost {
       // int lastByteRead = 0;
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
-
-//      if (firstReceivedAck != null) {
-//        // can happen when first ACK in handshake is dropped
-//        sendBuffer.add(firstReceivedAck);
-//        bsnBufferSet.add(firstReceivedAck.byteSequenceNum);
-//      }
 
       while (isOpen) {
         // Receive data
