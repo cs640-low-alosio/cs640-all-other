@@ -68,7 +68,7 @@ public class Receiver extends TCPEndHost {
         bsn++;
 
         // Receive Ack Packet (3rd leg)
-//        do {
+        do {
           // we might still be receiving leftover SYN retransmits
           try {
             socket.setSoTimeout(INITIAL_TIMEOUT_MS);
@@ -77,7 +77,7 @@ public class Receiver extends TCPEndHost {
             e.printStackTrace();
             continue;
           }
-//        } while (firstReceivedAck.isSyn);
+        } while (firstReceivedAck.isSyn);
 
         if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn) {
           isFirstAckReceived = true;

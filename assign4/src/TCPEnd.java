@@ -82,6 +82,8 @@ public class TCPEnd {
         GBNSegment firstAckReceived = null;
         while (!isConnected) {
           try {
+            receiver.bsn = 0;
+            receiver.nextByteExpected = 0;
             firstAckReceived = receiver.openConnection();
           } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
