@@ -79,7 +79,7 @@ public class Receiver extends TCPEndHost {
             e.printStackTrace();
             continue;
           }
-        } while (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn);
+        } while (firstReceivedAck.isSyn);
 
         if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn) {
           isFirstAckReceived = true;
