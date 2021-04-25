@@ -59,7 +59,6 @@ public class Receiver extends TCPEndHost {
       throw new UnexpectedFlagException("Expected SYN flags!", handshakeSyn);
     }
 
-
     boolean isFirstAckReceived = false;
     while (!isFirstAckReceived)
       try {
@@ -202,10 +201,13 @@ public class Receiver extends TCPEndHost {
             }
           }
         } catch (SegmentChecksumMismatchException e) {
+          System.err.println("bad checksum 1");
           e.printStackTrace();
+          numDiscardPackets++;
           continue;
         } catch (UnexpectedFlagException e) {
           e.printStackTrace();
+          numDiscardPackets++;
           continue;
         }
       }

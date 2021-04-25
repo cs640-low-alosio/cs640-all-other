@@ -108,21 +108,21 @@ public class GBNSegment implements Comparable<GBNSegment> {
     }
 
     // Calculate checksum
-    bb.rewind();
-    int tempSum = 0;
-    for (int i = 0; i < allSegmentData.length / 2; i++) {
-      tempSum += bb.getShort();
-    }
-    if (allSegmentData.length % 2 == 1) { // there is an extra byte at the end
-      tempSum += (bb.get() & 0xff) << 8;
-    }
-    // Handle carry-over
-    while (tempSum > 0xffff) {
-      int carryoverBits = tempSum >> 15;
-      int lastSixteenBits = tempSum - ((tempSum >> 10) << 15);
-      tempSum = lastSixteenBits + carryoverBits;
-    }
-    this.checksum = (short) (~tempSum & 0xffff);
+    // bb.rewind();
+    // int tempSum = 0;
+    // for (int i = 0; i < allSegmentData.length / 2; i++) {
+    // tempSum += bb.getShort();
+    // }
+    // if (allSegmentData.length % 2 == 1) { // there is an extra byte at the end
+    // tempSum += (bb.get() & 0xff) << 8;
+    // }
+    // // Handle carry-over
+    // while (tempSum > 0xffff) {
+    // int carryoverBits = tempSum >> 15;
+    // int lastSixteenBits = tempSum - ((tempSum >> 10) << 15);
+    // tempSum = lastSixteenBits + carryoverBits;
+    // }
+    this.checksum = (short) (0xffff);
 
     bb.putShort(22, this.checksum);
 
