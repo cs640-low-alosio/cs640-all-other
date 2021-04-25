@@ -28,8 +28,8 @@ public class Receiver extends TCPEndHost {
       SegmentChecksumMismatchException, UnexpectedFlagException {
     GBNSegment firstReceivedAck = null;
 
-    this.socket = new DatagramSocket(receiverPort);
-    this.socket.setSoTimeout(0);
+    // this.socket = new DatagramSocket(receiverPort);
+    // this.socket.setSoTimeout(0);
 
     // Receive First Syn Packet
     // Do this manually to get the sender IP and port

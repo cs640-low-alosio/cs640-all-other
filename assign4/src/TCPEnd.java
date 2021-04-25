@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class TCPEnd {
@@ -74,6 +75,8 @@ public class TCPEnd {
       long startTime = System.nanoTime();
 
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
+      receiver.socket = new DatagramSocket(receiverPort);
+      receiver.socket.setSoTimeout(0);
       try {
         boolean isConnected = false;
         GBNSegment firstAckReceived = null;
