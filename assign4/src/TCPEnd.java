@@ -92,14 +92,15 @@ public class TCPEnd {
         receiver.receiveDataAndClose(firstAckReceived);
       } catch (MaxRetransmitException e) {
         e.printStackTrace();
-      }
-      receiver.socket.close();
-      receiver.printFinalStatsHeader();
+      } finally {
+        receiver.socket.close();
+        receiver.printFinalStatsHeader();
 
-      long endTime = System.nanoTime();
-      float runTime = (endTime - startTime) / 1000000000F;
-      System.out.println("=====Other Stats=====");
-      System.out.println("    Runtime (s): " + TCPEndHost.threePlaces.format(runTime));
+        long endTime = System.nanoTime();
+        float runTime = (endTime - startTime) / 1000000000F;
+        System.out.println("=====Other Stats=====");
+        System.out.println("    Runtime (s): " + TCPEndHost.threePlaces.format(runTime));
+      }
     } else {
       System.out.println(
           "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");

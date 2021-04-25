@@ -125,92 +125,93 @@ public class Receiver extends TCPEndHost {
         GBNSegment data;
         try {
           data = handlePacket();
-        } catch (SegmentChecksumMismatchException e) {
-          e.printStackTrace();
-          continue;
-        }
 
-        // If a client is sending a cumulative acknowledgment of several packets, the
-        // timestamp from the latest received packet which is causing this acknowledgment
-        // should be copied into the reply.
-        long mostRecentTimestamp = data.timestamp;
+          // If a client is sending a cumulative acknowledgment of several packets, the
+          // timestamp from the latest received packet which is causing this acknowledgment
+          // should be copied into the reply.
+          long mostRecentTimestamp = data.timestamp;
 
-        int currBsn = data.byteSequenceNum;
-        int firstByteBeyondSws = nextByteExpected + (sws * mtu);
-        // Check if received packet is within SWS
-        if (currBsn >= firstByteBeyondSws) {
-          // Discard out-of-order packets (outside sliding window size)
-          System.err.println("Rcv - discard out-of-order packet!!!");
-          GBNSegment ackSegment =
-              GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
-          sendPacket(ackSegment, senderIp, senderPort);
-          numDiscardPackets++;
-          continue; // wait for more packets
-        } else if (currBsn < nextByteExpected) { // before sws...?
-          // When this condition was part of the discard out-of-order packet
-          // and send ACK case above, we were sending a ton of duplicate ACKs which was causing
-          // a ton of extra traffic
-          // System.err.println("Rcv - discard out-of-order packet!!!");
-          GBNSegment ackSegment =
-              GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
-          sendPacket(ackSegment, senderIp, senderPort);
-          numDiscardPackets++;
-          continue;
-        } else {
-          // Add packets to buffer if within sliding window size
-          if (!bsnBufferSet.contains(currBsn)) {
-            bsnBufferSet.add(currBsn);
-            sendBuffer.add(data);
-            // process send buffer
-          } else {
+          int currBsn = data.byteSequenceNum;
+          int firstByteBeyondSws = nextByteExpected + (sws * mtu);
+          // Check if received packet is within SWS
+          if (currBsn >= firstByteBeyondSws) {
+            // Discard out-of-order packets (outside sliding window size)
+            System.err.println("Rcv - discard out-of-order packet!!!");
+            GBNSegment ackSegment =
+                GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
+            sendPacket(ackSegment, senderIp, senderPort);
+            numDiscardPackets++;
             continue; // wait for more packets
-          }
+          } else if (currBsn < nextByteExpected) { // before sws...?
+            // When this condition was part of the discard out-of-order packet
+            // and send ACK case above, we were sending a ton of duplicate ACKs which was causing
+            // a ton of extra traffic
+            // System.err.println("Rcv - discard out-of-order packet!!!");
+            GBNSegment ackSegment =
+                GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
+            sendPacket(ackSegment, senderIp, senderPort);
+            numDiscardPackets++;
+            continue;
+          } else {
+            // Add packets to buffer if within sliding window size
+            if (!bsnBufferSet.contains(currBsn)) {
+              bsnBufferSet.add(currBsn);
+              sendBuffer.add(data);
+              // process send buffer
+            } else {
+              continue; // wait for more packets
+            }
 
-          while (!sendBuffer.isEmpty()) { // restructure this while loop to not be confusing
-            GBNSegment minSegment = sendBuffer.peek();
+            while (!sendBuffer.isEmpty()) { // restructure this while loop to not be confusing
+              GBNSegment minSegment = sendBuffer.peek();
 
-            // check if sendBuffer has next expected packet
-            if (minSegment.byteSequenceNum == nextByteExpected) {
-              // Terminate Connection
-              if (!minSegment.isAck || minSegment.getDataLength() <= 0) {
-                // receive non-data packeton close
-                if (minSegment.isFin) {
-                  outStream.close();
-                  closeConnection(mostRecentTimestamp);
-                  sendBuffer.remove(minSegment);
-                  bsnBufferSet.remove(minSegment.byteSequenceNum);
-                  isOpen = false;
+              // check if sendBuffer has next expected packet
+              if (minSegment.byteSequenceNum == nextByteExpected) {
+                // Terminate Connection
+                if (!minSegment.isAck || minSegment.getDataLength() <= 0) {
+                  // receive non-data packeton close
+                  if (minSegment.isFin) {
+                    outStream.close();
+                    closeConnection(mostRecentTimestamp);
+                    sendBuffer.remove(minSegment);
+                    bsnBufferSet.remove(minSegment.byteSequenceNum);
+                    isOpen = false;
+                  } else {
+                    throw new UnexpectedFlagException("Expected ACK and data or FIN!", minSegment);
+                  }
                 } else {
-                  throw new UnexpectedFlagException("Expected ACK and data or FIN!", minSegment);
+                  // Reconstruct file and send ACK
+                  outStream.write(minSegment.getPayload());
+
+                  nextByteExpected += minSegment.getDataLength();
+                  lastByteReceived += minSegment.getDataLength();
+                  GBNSegment ackSegment =
+                      GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
+                  sendPacket(ackSegment, senderIp, senderPort);
+
+                  bsnBufferSet.remove(minSegment.byteSequenceNum);
+                  sendBuffer.remove(minSegment);
                 }
               } else {
-                // Reconstruct file and send ACK
-                outStream.write(minSegment.getPayload());
-
-                nextByteExpected += minSegment.getDataLength();
-                lastByteReceived += minSegment.getDataLength();
+                // not next expected packet; send duplicate ACK
                 GBNSegment ackSegment =
                     GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
                 sendPacket(ackSegment, senderIp, senderPort);
-
-                bsnBufferSet.remove(minSegment.byteSequenceNum);
-                sendBuffer.remove(minSegment);
+                break;
               }
-            } else {
-              // not next expected packet; send duplicate ACK
-              GBNSegment ackSegment =
-                  GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
-              sendPacket(ackSegment, senderIp, senderPort);
-              break;
             }
           }
+        } catch (SegmentChecksumMismatchException e) {
+          e.printStackTrace();
+          continue;
+        } catch (UnexpectedFlagException e) {
+          e.printStackTrace();
+          continue;
         }
       }
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     } catch (IOException e) {
-      e.printStackTrace();
-    } catch (UnexpectedFlagException e) {
       e.printStackTrace();
     }
   }
