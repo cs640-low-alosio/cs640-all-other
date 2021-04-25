@@ -66,7 +66,6 @@ public class Sender extends TCPEndHost {
           throw new MaxRetransmitException("Max SYN retransmits!");
         }
         bsn--;
-        System.err.println("Retransmit SYN! " + this.numRetransmits);
         continue;
       }
     }
@@ -229,7 +228,6 @@ public class Sender extends TCPEndHost {
         if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
           throw new MaxRetransmitException("Max FIN retransmits!");
         }
-        System.err.println("retransmit FIN! " + currNumRetransmits);
         this.numRetransmits++;
         bsn--;
         continue;

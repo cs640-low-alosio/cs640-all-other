@@ -93,7 +93,6 @@ public class Receiver extends TCPEndHost {
           // exit immediately
           throw new MaxRetransmitException("Max SYNACK retransmits!");
         }
-        System.err.println("Retransmit SYNACK!" + this.numRetransmits);
         bsn--;
         continue;
       }
