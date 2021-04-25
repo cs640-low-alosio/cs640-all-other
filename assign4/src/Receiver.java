@@ -241,6 +241,10 @@ public class Receiver extends TCPEndHost {
 
         if (lastAckSegment.isAck) {
           isLastAckReceived = true;
+        } else if (lastAckSegment.isFin) {
+          // discard Fin retransmission
+          bsn--;
+          continue;
         } else {
           throw new UnexpectedFlagException();
         }
