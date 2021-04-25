@@ -59,7 +59,7 @@ public class Receiver extends TCPEndHost {
     }
 
     boolean isFirstAckReceived = false;
-    while (!isFirstAckReceived)
+    while (!isFirstAckReceived) {
       try {
         // Send 2nd Syn+Ack Packet
         GBNSegment handshakeSynAck =
@@ -94,6 +94,7 @@ public class Receiver extends TCPEndHost {
         bsn--;
         continue;
       }
+    }
 
     if (firstReceivedAck != null && firstReceivedAck.dataLength >= 0) {
       return firstReceivedAck;
