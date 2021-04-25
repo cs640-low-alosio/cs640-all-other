@@ -33,7 +33,8 @@ public class TCPEndHost {
   protected int numPacketsReceived;
   protected int lastByteSent;
   protected int lastByteReceived;
-  protected int numDiscardPackets;
+  protected int numOutOfSeqDiscardPackets;
+  protected int numChkDiscardPackets;
   protected int numRetransmits;
   protected int numDupAcks;
 
@@ -169,7 +170,8 @@ public class TCPEndHost {
     System.out.println("  Data Received (KB) : " + threePlaces.format((double) (this.lastByteReceived / 1000.0F)));
     System.out.println("  Packets Sent: " + this.numPacketsSent);
     System.out.println("  Packets Received: " + this.numPacketsReceived);
-    System.out.println("  Out-of-Sequence Packets Discarded: " + this.numDiscardPackets);
+    System.out.println("  Out-of-Sequence Packets Discarded: " + this.numOutOfSeqDiscardPackets);
+    System.out.println("  Checksum Mismatch Packets Discarded: " + this.numChkDiscardPackets);
     System.out.println("  Number of Retransmissions: " + this.numRetransmits);
     System.out.println("  Number of Duplicate Acknowledgements: " + this.numDupAcks);
   }

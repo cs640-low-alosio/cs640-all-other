@@ -46,7 +46,6 @@ public class TCPEnd {
         e.printStackTrace();
       } catch (UnexpectedFlagException e) {
         e.printStackTrace();
-        sender.numDiscardPackets++;
       } finally {
         sender.socket.close();
         sender.printFinalStatsHeader();
@@ -88,11 +87,10 @@ public class TCPEnd {
             firstAckReceived = receiver.openConnection();
           } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
-            receiver.numDiscardPackets++;
+            receiver.numChkDiscardPackets++;
             continue;
           } catch (UnexpectedFlagException e) {
             e.printStackTrace();
-            receiver.numDiscardPackets++;
             continue;
           }
           isConnected = true;

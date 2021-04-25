@@ -40,7 +40,7 @@ public class Sender extends TCPEndHost {
           handshakeSecondSynAck = handlePacket();
         } catch (SegmentChecksumMismatchException e) {
           e.printStackTrace();
-          this.numDiscardPackets++;
+          this.numChkDiscardPackets++;
           continue;
         }
 
@@ -157,11 +157,10 @@ public class Sender extends TCPEndHost {
             break; // exit wait ACK loop
           } catch (UnexpectedFlagException e) {
             e.printStackTrace();
-            this.numDiscardPackets++;
             continue;
           } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
-            this.numDiscardPackets++;
+            this.numChkDiscardPackets++;
             continue;
           }
           // reset counter because we made it through the window without retrasmission
@@ -207,7 +206,7 @@ public class Sender extends TCPEndHost {
             returnFinAckSegment = handlePacket();
           } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
-            this.numDiscardPackets++;
+            this.numChkDiscardPackets++;
             bsn--;
             continue;
           }

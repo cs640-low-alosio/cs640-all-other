@@ -75,7 +75,7 @@ public class Receiver extends TCPEndHost {
             firstReceivedAck = handlePacket();
           } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
-            this.numDiscardPackets++;
+            this.numChkDiscardPackets++;
             continue;
           }
         } while (firstReceivedAck.isSyn);
@@ -140,7 +140,7 @@ public class Receiver extends TCPEndHost {
             GBNSegment ackSegment =
                 GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
             sendPacket(ackSegment, senderIp, senderPort);
-            numDiscardPackets++;
+            this.numOutOfSeqDiscardPackets++;
             continue; // wait for more packets
           } else if (currBsn < nextByteExpected) { // before sws...?
             // When this condition was part of the discard out-of-order packet
@@ -150,7 +150,7 @@ public class Receiver extends TCPEndHost {
             GBNSegment ackSegment =
                 GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
             sendPacket(ackSegment, senderIp, senderPort);
-            numDiscardPackets++;
+            this.numOutOfSeqDiscardPackets++;
             continue;
           } else {
             // Add packets to buffer if within sliding window size
@@ -204,11 +204,10 @@ public class Receiver extends TCPEndHost {
         } catch (SegmentChecksumMismatchException e) {
           System.err.println("bad checksum 1");
           e.printStackTrace();
-          this.numDiscardPackets++;
+          this.numChkDiscardPackets++;
           continue;
         } catch (UnexpectedFlagException e) {
           e.printStackTrace();
-          this.numDiscardPackets++;
           continue;
         }
       }
@@ -237,7 +236,7 @@ public class Receiver extends TCPEndHost {
           lastAckSegment = handlePacket();
         } catch (SegmentChecksumMismatchException e) {
           e.printStackTrace();
-          this.numDiscardPackets++;
+          this.numChkDiscardPackets++;
           continue;
         }
 
