@@ -113,14 +113,9 @@ public class Sender extends TCPEndHost {
 
         // wait for ACKs
         while (lastByteAcked < this.lastByteSent) {
-          try {
             GBNSegment currAck;
             try {
               currAck = handlePacket();
-            } catch (SegmentChecksumMismatchException e) {
-              e.printStackTrace();
-              continue;
-            }
 
             if (!currAck.isAck) {
               throw new UnexpectedFlagException("Expected ACK!", currAck);
@@ -160,6 +155,9 @@ public class Sender extends TCPEndHost {
             currRetransmit++;
             break; // exit wait ACK loop
           } catch (UnexpectedFlagException e) {
+            e.printStackTrace();
+            continue;
+          } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
             continue;
           }

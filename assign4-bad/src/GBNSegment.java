@@ -27,8 +27,9 @@ public class GBNSegment implements Comparable<GBNSegment> {
       byte[] payloadData, int dataLength) {
     this(bsNum, ackNum, System.nanoTime(), isSyn, isFin, isAck, payloadData, dataLength);
   }
-  
-  public GBNSegment(int bsNum, int ackNum, long timestamp, boolean isSyn, boolean isFin, boolean isAck, byte[] payloadData, int dataLength) {
+
+  public GBNSegment(int bsNum, int ackNum, long timestamp, boolean isSyn, boolean isFin,
+      boolean isAck, byte[] payloadData, int dataLength) {
     this.byteSequenceNum = bsNum;
     this.ackNum = ackNum;
     this.timestamp = timestamp;
@@ -108,21 +109,22 @@ public class GBNSegment implements Comparable<GBNSegment> {
     }
 
     // Calculate checksum
-    // bb.rewind();
-    // int tempSum = 0;
-    // for (int i = 0; i < allSegmentData.length / 2; i++) {
-    // tempSum += bb.getShort();
-    // }
-    // if (allSegmentData.length % 2 == 1) { // there is an extra byte at the end
-    // tempSum += (bb.get() & 0xff) << 8;
-    // }
-    // // Handle carry-over
-    // while (tempSum > 0xffff) {
-    // int carryoverBits = tempSum >> 15;
-    // int lastSixteenBits = tempSum - ((tempSum >> 10) << 15);
-    // tempSum = lastSixteenBits + carryoverBits;
-    // }
-    this.checksum = (short) (0xffff);
+    bb.rewind();
+    int tempSum = 0;
+    for (int i = 0; i < allSegmentData.length / 2; i++) {
+      tempSum += bb.getShort();
+    }
+    if (allSegmentData.length % 2 == 1) { // there is an extra byte at the end
+      tempSum += (bb.get() & 0xff) << 8;
+    }
+    // Handle carry-over
+    while (tempSum > 0xffff) {
+      int carryoverBits = tempSum >> 15;
+      int lastSixteenBits = tempSum - ((tempSum >> 10) << 15);
+      tempSum = lastSixteenBits + carryoverBits;
+    }
+    this.checksum = (short) (~tempSum & 0xffff);
+    // this.checksum = (short) (0xffff);
 
     bb.putShort(22, this.checksum);
 
