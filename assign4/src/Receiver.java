@@ -87,12 +87,13 @@ public class Receiver extends TCPEndHost {
           throw new UnexpectedFlagException();
         }
       } catch (SocketTimeoutException e) {
+        System.err.println("Timeout while waiting for first ACK!");
         this.numRetransmits++;
         if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
           // exit immediately
           throw new MaxRetransmitException("Max SYNACK retransmits!");
         }
-        System.out.println("Retransmit SYNACK!" + this.numRetransmits);
+        System.err.println("Retransmit SYNACK!" + this.numRetransmits);
         bsn--;
         continue;
       }
@@ -246,6 +247,7 @@ public class Receiver extends TCPEndHost {
           throw new UnexpectedFlagException();
         }
       } catch (SocketTimeoutException e) {
+        System.err.println("Timeout while waiting for last ACK!");
         currNumRetransmits++;
         if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
           // exit immediately

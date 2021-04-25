@@ -60,12 +60,13 @@ public class Sender extends TCPEndHost {
           continue;
         }
       } catch (SocketTimeoutException e) {
+        System.err.println("Timeout while waiting for SYNACK!");
         this.numRetransmits++;
         if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
           throw new MaxRetransmitException("Max SYN retransmits!");
         }
         bsn--;
-        System.out.println("Retransmit SYN! " + this.numRetransmits);
+        System.err.println("Retransmit SYN! " + this.numRetransmits);
         continue;
       }
     }
@@ -150,6 +151,7 @@ public class Sender extends TCPEndHost {
               currDupAck = 0;
             }
           } catch (SocketTimeoutException e) {
+            System.err.println("Timeout while waiting for ACK!");
             if (currRetransmit >= MAX_RETRANSMITS) {
               throw new MaxRetransmitException("Max data retransmits!");
             }
@@ -222,11 +224,12 @@ public class Sender extends TCPEndHost {
           throw new UnexpectedFlagException();
         }
       } catch (SocketTimeoutException e) {
+        System.err.println("Timeout while waiting for FINACK!");
         currNumRetransmits++;
         if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
           throw new MaxRetransmitException("Max FIN retransmits!");
         }
-        System.out.println("retransmit FIN! " + currNumRetransmits);
+        System.err.println("retransmit FIN! " + currNumRetransmits);
         this.numRetransmits++;
         bsn--;
         continue;
