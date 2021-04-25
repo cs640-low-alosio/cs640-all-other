@@ -18,86 +18,77 @@ public class Sender extends TCPEndHost {
     this.filename = filename;
     this.mtu = mtu;
     this.sws = sws;
-    this.timeout = INITIAL_TIMEOUT;
   }
 
-  public void openConnection() {
-    try {
-      this.socket = new DatagramSocket(senderSourcePort);
+  public void openConnection() throws IOException, MaxRetransmitException {
+    this.socket = new DatagramSocket(senderSourcePort);
+    this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
 
-      // Send First Syn Packet
-      // TODO: Retransmission of handshake (hopefully same implementation as data transfer)
-      // piazza@395
-      // TODO: Check flags
-      // TODO: does SYN flag occupy one byte in byte sequence number? piazza@###
-      // TODO: fix setting mtu to less than TCP segment size BufferUnderflowException
+    // Send First Syn Packet
+    // piazza@395
+    boolean isSynAckReceived = false;
+    while (!isSynAckReceived) {
       GBNSegment handshakeFirstSyn =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.SYN);
       sendPacket(handshakeFirstSyn, receiverIp, receiverPort);
-      // byte[] handshakeSynData = handshakeSyn.serialize();
-      // DatagramPacket handshakeSynPacket =
-      // new DatagramPacket(handshakeSynData, handshakeSynData.length, receiverIp, receiverPort);
-      // socket.send(handshakeSynPacket);
       bsn++;
 
       // // Receive 2nd Syn+Ack Packet
-      // byte[] hsSynAckBytes = new byte[mtu];
-      // DatagramPacket hsSynAckPacket = new DatagramPacket(hsSynAckBytes, mtu);
-      // socket.receive(hsSynAckPacket);
-      // hsSynAckBytes = hsSynAckPacket.getData();
-      // GBNSegment hsSynAck = new GBNSegment();
-      // hsSynAck.deserialize(hsSynAckBytes);
-      // // Verify checksum Syn+Ack packet
-      // short origChk = hsSynAck.getChecksum();
-      // hsSynAck.resetChecksum();
-      // hsSynAck.serialize();
-      // short calcChk = hsSynAck.getChecksum();
-      // if (origChk != calcChk) {
-      // System.out.println("Handshake: Sender - Syn+Ack chk does not match!");
-      // }
-      GBNSegment handshakeSecondSynAck = handlePacket(socket);
-      if (!(handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck)) {
-        System.out.println("Handshake: Sender - Does not have syn+ack flag");
-      }
-      nextByteExpected++;
+      try {
+        GBNSegment handshakeSecondSynAck;
+        try {
+          handshakeSecondSynAck = handlePacket();
+        } catch (SegmentChecksumMismatchException e) {
+          e.printStackTrace();
+          continue;
+        }
 
-      // Send 3rd Ack Packet
-      GBNSegment handshakeThirdAck =
-          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-      sendPacket(handshakeThirdAck, receiverIp, receiverPort);
-      // byte[] hsAckBytes = hsAck.serialize();
-      // DatagramPacket hsAckUdp =
-      // new DatagramPacket(hsAckBytes, hsAckBytes.length, receiverIp, receiverPort);
-      // socket.send(hsAckUdp);
-    } catch (IOException e) {
-      e.printStackTrace();
+        if (handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck) {
+          nextByteExpected++;
+          isSynAckReceived = true;
+
+          // Send 3rd Ack Packet
+          GBNSegment handshakeThirdAck =
+              GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+          sendPacket(handshakeThirdAck, receiverIp, receiverPort);
+        } else {
+          this.numRetransmits++;
+          if (this.numRetransmits >= (MAX_RETRANSMITS + 1)) {
+            throw new MaxRetransmitException("Max SYN retransmits!");
+          }
+          bsn--;
+          continue;
+        }
+      } catch (SocketTimeoutException e) {
+        System.err.println("Timeout while waiting for SYNACK!");
+        this.numRetransmits++;
+        if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
+          throw new MaxRetransmitException("Max SYN retransmits!");
+        }
+        bsn--;
+        continue;
+      }
     }
   }
 
-  public void sendData() {
+  public void sendData() throws MaxRetransmitException {
     // Data Transfer
     try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(filename))) {
       DataInputStream inputStream = new DataInputStream(in);
       byte[] sendBuffer = new byte[mtu * sws]; // right now, buffer is the same size as the sws
 
       // Initial filling up send buffer
-      int lastByteSent = 0;
       int lastByteAcked = 0;
       int lastByteWritten = 0;
-      short retransmitCounter = 0;
-      // int tempLastByteWritten = 0;
-      // int effectiveWindow = 0;
-      // int advertisedWindow = sws;
+      short currRetransmit = 0;
       int byteReadCount;
-      int dupAckCount = 0;
+      int currDupAck = 0;
 
-      inputStream.mark(mtu * sws + 1);
+      inputStream.mark(mtu * sws);
       // fill up entire sendbuffer, which is currently = sws
       while ((byteReadCount = inputStream.read(sendBuffer, 0, mtu * sws)) != -1) {
         lastByteWritten += byteReadCount;
         // Send entire buffer (currently = sws)
-        // TODO: implement sws during retransmit
-        // TODO: discard packets due to incorrect checksum
         for (int j = 0; j < (byteReadCount / mtu) + 1; j++) {
           byte[] onePayload;
           int payloadLength;
@@ -116,65 +107,68 @@ public class Sender extends TCPEndHost {
 
           GBNSegment dataSegment = GBNSegment.createDataSegment(bsn, nextByteExpected, onePayload);
           sendPacket(dataSegment, receiverIp, receiverPort);
-          lastByteSent += payloadLength;
+          this.lastByteSent += payloadLength; // lastbytesent is the same as lastbytewritten?
           bsn += payloadLength;
         }
 
         // wait for ACKs
-        while (lastByteAcked < lastByteSent) {
+        while (lastByteAcked < this.lastByteSent) {
           try {
-            GBNSegment ack = handlePacket(socket);
-            if (!ack.isAck) {
-              System.out.println("Error: Snd - unexpected flags!");
+            GBNSegment currAck;
+            try {
+              currAck = handlePacket();
+            } catch (SegmentChecksumMismatchException e) {
+              e.printStackTrace();
+              continue;
+            }
+
+            if (!currAck.isAck) {
+              throw new UnexpectedFlagException("Expected ACK!", currAck);
             }
             this.socket.setSoTimeout((int) (timeout / 1000000));
 
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
-            lastByteAcked = ack.getAckNum() - 1;
+            lastByteAcked = currAck.ackNum - 1;
 
-            // TODO: retransmit (three duplicate acks)
-            // TODO: max retransmit counter for three duplicate ACKs
+            // Retransmit (three duplicate acks)
             if (prevAck == lastByteAcked) {
-              dupAckCount++;
-              if (dupAckCount >= 3) {
-                inputStream.reset();
+              currDupAck++;
+              this.numDupAcks++;
+              if (currDupAck == 3) {
+                if (currRetransmit >= MAX_RETRANSMITS) {
+                  throw new MaxRetransmitException("Max data retransmits!");
+                }
                 // Slide the window
                 // skip bytes from lastAck to mark (start of buffer in read loop)
-                inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-                lastByteWritten = lastByteAcked; // is this right???
-                lastByteSent = lastByteAcked; // is this right???
-                bsn = lastByteAcked + 1; // is this right???
+                slideWindow(inputStream, lastByteAcked, lastByteWritten, byteReadCount);
+                lastByteWritten = this.lastByteSent;
+                currRetransmit++;
                 break; // exit wait ACK loop
               }
             } else {
-              dupAckCount = 0;
+              currDupAck = 0;
             }
-            // TODO: Nagle's algorithm?
           } catch (SocketTimeoutException e) {
-            // If unacknowledged messages remain in a host's send buffer and no response from the
-            // destination has been received after multiple retransmission attempts, the sending
-            // host will stop trying to send the messages and report an error. This maximum is set
-            // to 16 by default.
-            if (retransmitCounter >= 16) {
-              System.out.println("Already sent 16 retransmits. Quitting!");
-              e.printStackTrace();
-              return;
+            System.err.println("Timeout while waiting for ACK!");
+            if (currRetransmit >= MAX_RETRANSMITS) {
+              throw new MaxRetransmitException("Max data retransmits!");
             }
-            // Slide the window TODO: redundant code with triplicate ACK
-            inputStream.reset();
-            inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
-            retransmitCounter++;
-            lastByteWritten = lastByteAcked; // is this right???
-            lastByteSent = lastByteAcked; // is this right???
-            bsn = lastByteAcked + 1; // is this right???
+            // Slide the window and retransmit after timeout
+            slideWindow(inputStream, lastByteAcked, lastByteWritten, byteReadCount);
+            lastByteWritten = this.lastByteSent;
+            currRetransmit++;
             break; // exit wait ACK loop
+          } catch (UnexpectedFlagException e) {
+            e.printStackTrace();
+            continue;
           }
+          // reset counter because we made it through the window without retrasmission
+          currRetransmit = 0;
         }
 
-        // remove from buffer
-        inputStream.mark(byteReadCount + mtu * sws + 1);
-        retransmitCounter = 0; // TODO: not sure where to reset this
+        // remove from buffer; mark position in file
+        inputStream.mark(mtu * sws);
       }
     } catch (FileNotFoundException e) {
       e.printStackTrace();
@@ -183,50 +177,67 @@ public class Sender extends TCPEndHost {
     }
   }
 
-  public void closeConnection() {
-    // Send FIN
-    // TODO: retransmit fin
-    try {
+  private void slideWindow(DataInputStream inputStream, int lastByteAcked, int lastByteWritten,
+      int byteReadCount) throws IOException {
+    inputStream.reset();
+    inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
+    this.lastByteSent = lastByteAcked;
+    this.bsn = lastByteAcked + 1;
+    this.numRetransmits++;
+  }
 
+  public void closeConnection()
+      throws IOException, MaxRetransmitException, UnexpectedFlagException {
+    // Send FIN
+    boolean isFinAckReceived = false;
+    short currNumRetransmits = 0;
+    while (!isFinAckReceived) {
       GBNSegment finSegment =
           GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.FIN);
       sendPacket(finSegment, receiverIp, receiverPort);
       bsn++;
 
-      // Receive ACK
-      GBNSegment returnAckSegment = handlePacket(socket);
-      if (!returnAckSegment.isAck || returnAckSegment.isFin || returnAckSegment.isSyn) {
-        System.out.println("Error: Snd - unexpected flags!");
+      // Receive FIN+ACK
+      try {
+        GBNSegment returnFinAckSegment = null;
+        do {
+          // we still might be receiving leftover ACKs from data transfer
+          try {
+            returnFinAckSegment = handlePacket();
+          } catch (SegmentChecksumMismatchException e) {
+            e.printStackTrace();
+            bsn--;
+            continue;
+          }
+        } while (returnFinAckSegment.isAck && !returnFinAckSegment.isFin && !returnFinAckSegment.isSyn);
+
+        if (returnFinAckSegment.isFin && returnFinAckSegment.isAck && !returnFinAckSegment.isSyn) {
+          nextByteExpected++;
+          isFinAckReceived = true;
+
+          // Send last ACK
+          GBNSegment lastAckSegment =
+              GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
+          sendPacket(lastAckSegment, receiverIp, receiverPort);
+        } else {
+          throw new UnexpectedFlagException();
+        }
+      } catch (SocketTimeoutException e) {
+        System.err.println("Timeout while waiting for FINACK!");
+        currNumRetransmits++;
+        if (currNumRetransmits >= (MAX_RETRANSMITS + 1)) {
+          throw new MaxRetransmitException("Max FIN retransmits!");
+        }
+        this.numRetransmits++;
+        bsn--;
+        continue;
       }
-      // Receive FIN
-      GBNSegment returnFinSegment = handlePacket(socket);
-      if (!returnFinSegment.isFin || returnFinSegment.isAck || returnFinSegment.isSyn) {
-        System.out.println("Error: Snd - unexpected flags!");
-      }
-      nextByteExpected++;
-
-      // Send last ACK
-      GBNSegment lastAckSegment =
-          GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
-      sendPacket(lastAckSegment, receiverIp, receiverPort);
-
-      // TODO: wait timeout to close connection (see lecture/book)
-      // The main thing to recognize about connection teardown is that a connection in the TIME_WAIT
-      // state cannot move to the CLOSED state until it has waited for two times the maximum amount of
-      // time an IP datagram might live in the Internet (i.e., 120 seconds). The reason for this is
-      // that, while the local side of the connection has sent an ACK in response to the other side's
-      // FIN segment, it does not know that the ACK was successfully delivered. As a consequence, the
-      // other side might retransmit its FIN segment, and this second FIN segment might be delayed in
-      // the network. If the connection were allowed to move directly to the CLOSED state, then
-      // another pair of application processes might come along and open the same connection (i.e.,
-      // use the same pair of port numbers), and the delayed FIN segment from the earlier incarnation
-      // of the connection would immediately initiate the termination of the later incarnation of that
-      // connection.
-
-      // TODO: print final output
-    } catch (IOException e) {
-      // TODO: handle exception
     }
+  }
+
+  public void printFinalStatsHeader() {
+    System.out.println("TCPEnd Sender Finished==========");
+    this.printFinalStats();
   }
 
 }

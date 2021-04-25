@@ -1,8 +1,8 @@
+import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class TCPEnd {
-  public static void main(String[] args) throws UnknownHostException {
+  public static void main(String[] args) throws IOException {
     int senderSourcePort = -1;
     int receiverPort = -1;
     InetAddress receiverIp = null;
@@ -34,11 +34,25 @@ public class TCPEnd {
             "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");
       }
 
+      long startTime = System.nanoTime();
+
       Sender sender = new Sender(senderSourcePort, receiverIp, receiverPort, filename, mtu, sws);
-      sender.openConnection();
-      sender.sendData();
-      sender.closeConnection();
-      sender.socket.close();
+      try {
+        sender.openConnection();
+        sender.sendData();
+        sender.closeConnection();
+      } catch (MaxRetransmitException e) {
+        e.printStackTrace();
+      } catch (UnexpectedFlagException e) {
+        e.printStackTrace();
+      } finally {
+        sender.socket.close();
+        sender.printFinalStatsHeader();
+        long endTime = System.nanoTime();
+        float runTime = (endTime - startTime) / 1000000000F;
+        System.out.println("=====Other Stats=====");
+        System.out.println("    Runtime (s): " + TCPEndHost.threePlaces.format(runTime));
+      }
     } else if (args.length == 8) { // TCPEnd receiver mode
       for (int i = 0; i < args.length; i++) {
         String arg = args[i];
@@ -57,9 +71,35 @@ public class TCPEnd {
         System.out.println("Receiver: java TCPend -p <port> -m <mtu> -c <sws> -f <file name>");
       }
 
+      long startTime = System.nanoTime();
+
       Receiver receiver = new Receiver(receiverPort, filename, mtu, sws);
-      receiver.openConnection();
-      receiver.receiveDataAndClose();
+      try {
+        boolean isConnected = false;
+        GBNSegment firstAckReceived = null;
+        while (!isConnected) {
+          try {
+            firstAckReceived = receiver.openConnection();
+          } catch (SegmentChecksumMismatchException e) {
+            e.printStackTrace();
+            continue;
+          } catch (UnexpectedFlagException e) {
+            e.printStackTrace();
+            continue;
+          }
+          isConnected = true;
+        }
+        receiver.receiveDataAndClose(firstAckReceived);
+      } catch (MaxRetransmitException e) {
+        e.printStackTrace();
+      }
+      receiver.socket.close();
+      receiver.printFinalStatsHeader();
+
+      long endTime = System.nanoTime();
+      float runTime = (endTime - startTime) / 1000000000F;
+      System.out.println("=====Other Stats=====");
+      System.out.println("    Runtime (s): " + TCPEndHost.threePlaces.format(runTime));
     } else {
       System.out.println(
           "Sender: java TCPend -p <port> -s <remote IP> -a <remote port> -f <file name> -m <mtu> -c <sws>");

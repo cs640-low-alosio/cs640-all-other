@@ -12,7 +12,6 @@ public class GBNSegment implements Comparable<GBNSegment> {
   protected int byteSequenceNum;
   protected int ackNum;
   protected long timestamp;
-  // protected int totalLength;
   protected boolean isSyn;
   protected boolean isFin;
   protected boolean isAck;
@@ -21,15 +20,6 @@ public class GBNSegment implements Comparable<GBNSegment> {
   protected int dataLength;
 
   public GBNSegment() {
-//    this.byteSequenceNum = 0;
-//    this.ackNum = 0;
-//    this.timestamp = System.nanoTime();
-//    this.isSyn = false;
-//    this.isFin = false;
-//    this.isAck = false;
-//    this.checksum = 0;
-//    this.payloadData = new byte[0];
-//    this.dataLength = 0;
     this(0, 0, System.nanoTime(), false, false, false, new byte[0], 0);
   }
 
