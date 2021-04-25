@@ -24,8 +24,8 @@ public class Receiver extends TCPEndHost {
     this.numPacketsReceived = 0;
   }
 
-  public GBNSegment openConnection()
-      throws IOException, MaxRetransmitException, SegmentChecksumMismatchException, UnexpectedFlagException {
+  public GBNSegment openConnection() throws IOException, MaxRetransmitException,
+      SegmentChecksumMismatchException, UnexpectedFlagException {
     GBNSegment firstReceivedAck = null;
 
     this.socket = new DatagramSocket(receiverPort);
@@ -115,7 +115,7 @@ public class Receiver extends TCPEndHost {
       // out-of-order pkt
       PriorityQueue<GBNSegment> sendBuffer = new PriorityQueue<>(sws);
       HashSet<Integer> bsnBufferSet = new HashSet<>();
-      
+
       if (firstReceivedAck != null && firstReceivedAck.isAck && firstReceivedAck.dataLength > 0) {
         // if handshake ACK is lost, then the first ACK might contain data.
         sendBuffer.add(firstReceivedAck);
@@ -153,7 +153,7 @@ public class Receiver extends TCPEndHost {
           // When this condition was part of the discard out-of-order packet
           // and send ACK case above, we were sending a ton of duplicate ACKs which was causing
           // a ton of extra traffic
-          System.err.println("Rcv - discard out-of-order packet!!!");
+          // System.err.println("Rcv - discard out-of-order packet!!!");
           GBNSegment ackSegment =
               GBNSegment.createAckSegment(bsn, nextByteExpected, mostRecentTimestamp);
           sendPacket(ackSegment, senderIp, senderPort);

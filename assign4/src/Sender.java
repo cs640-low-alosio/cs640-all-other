@@ -38,15 +38,15 @@ public class Sender extends TCPEndHost {
         GBNSegment handshakeSecondSynAck;
         try {
           handshakeSecondSynAck = handlePacket();
-        }catch (SegmentChecksumMismatchException e) {
+        } catch (SegmentChecksumMismatchException e) {
           e.printStackTrace();
           continue;
         }
-        
+
         if (handshakeSecondSynAck.isSyn && handshakeSecondSynAck.isAck) {
           nextByteExpected++;
           isSynAckReceived = true;
-          
+
           // Send 3rd Ack Packet
           GBNSegment handshakeThirdAck =
               GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
@@ -121,7 +121,7 @@ public class Sender extends TCPEndHost {
               e.printStackTrace();
               continue;
             }
-            
+
             if (!currAck.isAck) {
               throw new UnexpectedFlagException("Expected ACK!", currAck);
             }
@@ -130,7 +130,7 @@ public class Sender extends TCPEndHost {
             // piazza@393_f2 AckNum == NextByteExpected == LastByteAcked + 1
             int prevAck = lastByteAcked;
             lastByteAcked = currAck.ackNum - 1;
-            
+
             // Retransmit (three duplicate acks)
             if (prevAck == lastByteAcked) {
               currDupAck++;
@@ -176,7 +176,8 @@ public class Sender extends TCPEndHost {
     }
   }
 
-  private void slideWindow(DataInputStream inputStream, int lastByteAcked, int lastByteWritten, int byteReadCount) throws IOException {
+  private void slideWindow(DataInputStream inputStream, int lastByteAcked, int lastByteWritten,
+      int byteReadCount) throws IOException {
     inputStream.reset();
     inputStream.skip(lastByteAcked - (lastByteWritten - byteReadCount));
     this.lastByteSent = lastByteAcked;
@@ -184,7 +185,8 @@ public class Sender extends TCPEndHost {
     this.numRetransmits++;
   }
 
-  public void closeConnection() throws IOException, MaxRetransmitException, UnexpectedFlagException {
+  public void closeConnection()
+      throws IOException, MaxRetransmitException, UnexpectedFlagException {
     // Send FIN
     boolean isFinAckReceived = false;
     short currNumRetransmits = 0;
@@ -196,19 +198,22 @@ public class Sender extends TCPEndHost {
 
       // Receive FIN+ACK
       try {
-        GBNSegment returnFinAckSegment;
-        try {
-          returnFinAckSegment = handlePacket();
-        } catch (SegmentChecksumMismatchException e) {
-          e.printStackTrace();
-          bsn--;
-          continue;
-        }
-        
+        GBNSegment returnFinAckSegment = null;
+        do {
+          // we still might be receiving leftover ACKs from data transfer
+          try {
+            returnFinAckSegment = handlePacket();
+          } catch (SegmentChecksumMismatchException e) {
+            e.printStackTrace();
+            bsn--;
+            continue;
+          }
+        } while (returnFinAckSegment.isAck && !returnFinAckSegment.isFin && !returnFinAckSegment.isSyn);
+
         if (returnFinAckSegment.isFin && returnFinAckSegment.isAck && !returnFinAckSegment.isSyn) {
           nextByteExpected++;
           isFinAckReceived = true;
-          
+
           // Send last ACK
           GBNSegment lastAckSegment =
               GBNSegment.createHandshakeSegment(bsn, nextByteExpected, HandshakeType.ACK);
