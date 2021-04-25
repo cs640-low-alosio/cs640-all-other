@@ -68,16 +68,17 @@ public class Receiver extends TCPEndHost {
         bsn++;
 
         // Receive Ack Packet (3rd leg)
-//        do {
+        do {
           // we might still be receiving leftover SYN retransmits
           try {
             socket.setSoTimeout(INITIAL_TIMEOUT_MS);
             firstReceivedAck = handlePacket();
           } catch (SegmentChecksumMismatchException e) {
             e.printStackTrace();
+            this.numDiscardPackets++;
             continue;
           }
-//        } while (firstReceivedAck.isSyn);
+        } while (firstReceivedAck.isSyn);
 
         if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn) {
           isFirstAckReceived = true;
@@ -203,11 +204,11 @@ public class Receiver extends TCPEndHost {
         } catch (SegmentChecksumMismatchException e) {
           System.err.println("bad checksum 1");
           e.printStackTrace();
-          numDiscardPackets++;
+          this.numDiscardPackets++;
           continue;
         } catch (UnexpectedFlagException e) {
           e.printStackTrace();
-          numDiscardPackets++;
+          this.numDiscardPackets++;
           continue;
         }
       }
@@ -236,6 +237,7 @@ public class Receiver extends TCPEndHost {
           lastAckSegment = handlePacket();
         } catch (SegmentChecksumMismatchException e) {
           e.printStackTrace();
+          this.numDiscardPackets++;
           continue;
         }
 
