@@ -70,24 +70,21 @@ public class Receiver extends TCPEndHost {
         bsn++;
 
         // Receive Ack Packet (3rd leg)
-        try {
-          firstReceivedAck = handlePacket();
-        } catch (SegmentChecksumMismatchException e) {
-          e.printStackTrace();
-          continue;
-        }
+        do {
+          // we might still be receiving leftover SYN retransmits
+          try {
+            socket.setSoTimeout(INITIAL_TIMEOUT_MS);
+            firstReceivedAck = handlePacket();
+          } catch (SegmentChecksumMismatchException e) {
+            e.printStackTrace();
+            continue;
+          }
+        } while (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn);
 
         if (firstReceivedAck.isAck && !firstReceivedAck.isFin && !firstReceivedAck.isSyn) {
           isFirstAckReceived = true;
         } else {
-          System.out.println("Handshake: Rcvr - 3rd segment doesn't have correct flags!");
-          this.numRetransmits++;
-          if (this.numRetransmits % (MAX_RETRANSMITS + 1) == 0) {
-            // exit immediately
-            throw new MaxRetransmitException("Max SYNACK retransmits!");
-          }
-          bsn--;
-          continue;
+          throw new UnexpectedFlagException();
         }
       } catch (SocketTimeoutException e) {
         this.numRetransmits++;
@@ -124,7 +121,7 @@ public class Receiver extends TCPEndHost {
 
       while (isOpen) {
         // Receive data
-        this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
+        // this.socket.setSoTimeout(INITIAL_TIMEOUT_MS);
         GBNSegment data;
         try {
           data = handlePacket();
