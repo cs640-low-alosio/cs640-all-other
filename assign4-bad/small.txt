@@ -1,0 +1,89 @@
+*** -> Received packet:
+        ip
+        dl_vlan: untagged
+        dl_vlan_pcp: 0
+        dl_src: 00:00:00:00:00:01
+        dl_dst: d2:e6:50:3e:23:e9
+        nw_src: 10.0.1.101
+        nw_dst: 10.0.2.102
+        nw_tos: 0
+        nw_proto: 1
+        icmp_type: 8
+        icmp_code: 0
+        - destIp: 167772774
+        - expChecksum: -31919
+        - reset checksum: 0
+        - ActChecksum: -31919
+        - TTL: 63
+        - arpLookupIp: 167797762
+        - newDestMacAddr: 3E:74:E2:C9:99:56
+        - outIface name: eth2
+        - newSourceMacAddr: DE:41:66:F7:4D:F8
+*** -> Received packet:
+        ip
+        dl_vlan: untagged
+        dl_vlan_pcp: 0
+        dl_src: 3e:74:e2:c9:99:56
+        dl_dst: de:41:66:f7:4d:f8
+        nw_src: 10.0.2.102
+        nw_dst: 10.0.1.101
+        nw_tos: 0
+        nw_proto: 1
+        icmp_type: 0
+        icmp_code: 0
+        - destIp: 167772517
+        - expChecksum: -7188
+        - reset checksum: 0
+        - ActChecksum: -7188
+        - TTL: 62
+        - destination IP in current network, sending to destination IP address
+        - arpLookupIp: 167772517
+        - newDestMacAddr: 00:00:00:00:00:01
+        - outIface name: eth1
+        - newSourceMacAddr: D2:E6:50:3E:23:E9
+		
+		
+		
+*** -> Received packet:
+        ip
+        dl_vlan: untagged
+        dl_vlan_pcp: 0
+        dl_src: de:41:66:f7:4d:f8
+        dl_dst: 3e:74:e2:c9:99:56
+        nw_src: 10.0.1.101
+        nw_dst: 10.0.2.102
+        nw_tos: 0
+        nw_proto: 1
+        icmp_type: 8
+        icmp_code: 0
+        - destIp: 167772774
+        - expChecksum: -31663
+        - reset checksum: 0
+        - ActChecksum: -31663
+        - TTL: 62
+        - destination IP in current network, sending to destination IP address
+        - arpLookupIp: 167772774
+        - newDestMacAddr: 00:00:00:00:00:02
+        - outIface name: eth1
+        - newSourceMacAddr: 96:3F:69:A0:C1:2D
+*** -> Received packet:
+        ip
+        dl_vlan: untagged
+        dl_vlan_pcp: 0
+        dl_src: 00:00:00:00:00:02
+        dl_dst: 96:3f:69:a0:c1:2d
+        nw_src: 10.0.2.102
+        nw_dst: 10.0.1.101
+        nw_tos: 0
+        nw_proto: 1
+        icmp_type: 0
+        icmp_code: 0
+        - destIp: 167772517
+        - expChecksum: -7444
+        - reset checksum: 0
+        - ActChecksum: -7444
+        - TTL: 63
+        - arpLookupIp: 167797761
+        - newDestMacAddr: DE:41:66:F7:4D:F8
+        - outIface name: eth2
+        - newSourceMacAddr: 3E:74:E2:C9:99:56
