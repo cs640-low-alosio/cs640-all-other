@@ -178,7 +178,7 @@ public class Receiver extends TCPEndHost {
               if (!minSegment.isAck || minSegment.getDataLength() <= 0) {
                 // receive non-data packeton close
                 if (minSegment.isFin) {
-
+                  outStream.close();
                   closeConnection(mostRecentTimestamp);
                   sendBuffer.remove(minSegment);
                   bsnBufferSet.remove(minSegment.byteSequenceNum);
